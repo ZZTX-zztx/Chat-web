@@ -6,43 +6,30 @@
 }
 
 body {
-    background-color: #0f101f;
+    background-color: #1a1a2e;
     color: #fff;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    padding: 10px;
 }
 
-/* 整体聊天大容器 带边框圆角 */
 .chat-container {
     display: flex;
-    width: 100%;
-    max-width: 1200px;
-    height: 92vh;
-    border: 1px solid #2a2d47;
-    border-radius: 16px;
+    width: 100vw;
+    height: 100vh;
     overflow: hidden;
-    background-color: #1a1a2e;
-    box-shadow: 0 0 30px rgba(0,0,0,0.35);
 }
 
 /* 左侧侧边栏 */
 .sidebar {
     width: 260px;
-    min-width: 220px;
     background-color: #16213e;
     display: flex;
     flex-direction: column;
-    border-right: 1px solid #2a2d47;
 }
 
 .my-info {
     display: flex;
     align-items: center;
     padding: 15px;
-    border-bottom: 1px solid #2a2d47;
+    border-bottom: 1px solid #273469;
 }
 
 .my-avatar {
@@ -50,7 +37,6 @@ body {
     height: 40px;
     border-radius: 50%;
     margin-right: 10px;
-    object-fit: cover;
 }
 
 .friend-list {
@@ -75,15 +61,13 @@ body {
     height: 36px;
     border-radius: 50%;
     margin-right: 10px;
-    object-fit: cover;
 }
 
-/* 右侧聊天区域 */
+/* 右侧聊天区 */
 .chat-box {
     flex: 1;
     display: flex;
     flex-direction: column;
-    min-width: 0;
 }
 
 .chat-header {
@@ -92,7 +76,7 @@ body {
     padding: 0 20px;
     background-color: #0f3460;
     font-size: 18px;
-    border-bottom: 1px solid #2a2d47;
+    border-bottom: 1px solid #273469;
 }
 
 .chat-content {
@@ -113,11 +97,10 @@ body {
 }
 
 .msg-bubble {
-    max-width: 65%;
+    max-width: 60%;
     padding: 10px 14px;
     border-radius: 12px;
     line-height: 1.5;
-    word-break: break-all;
 }
 
 .msg-other .msg-bubble {
@@ -137,7 +120,7 @@ body {
     align-items: center;
     padding: 0 20px;
     background-color: #16213e;
-    border-top: 1px solid #2a2d47;
+    border-top: 1px solid #273469;
 }
 
 #msgInput {
@@ -165,19 +148,4 @@ body {
 
 #sendBtn:hover {
     opacity: 0.9;
-}
-
-/* 手机端自适应 */
-@media (max-width: 768px) {
-    .chat-container {
-        flex-direction: column;
-        height: 96vh;
-    }
-    .sidebar {
-        width: 100%;
-        height: auto;
-        max-height: 180px;
-        border-right: none;
-        border-bottom: 1px solid #2a2d47;
-    }
 }
