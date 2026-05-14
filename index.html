@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>网页聊天软件</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="chat-container">
+        <!-- 左侧好友侧边栏 -->
+        <div class="sidebar">
+            <div class="my-info">
+                <img class="my-avatar" src="https://picsum.photos/40/40" alt="头像">
+                <span class="my-name">我自己</span>
+            </div>
+            <div class="friend-list" id="friendList">
+                <!-- 好友由js动态渲染 -->
+            </div>
+        </div>
+
+        <!-- 右侧聊天区域 -->
+        <div class="chat-box">
+            <div class="chat-header">
+                <span id="currentFriend">请选择好友</span>
+            </div>
+            <div class="chat-content" id="chatContent">
+                <!-- 聊天消息动态渲染 -->
+            </div>
+            <div class="chat-input">
+                <input type="text" id="msgInput" placeholder="输入消息...">
+                <button id="sendBtn">发送</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="friend.js"></script>
+    <script src="chat.js"></script>
+</body>
+</html>
