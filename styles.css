@@ -34,11 +34,11 @@ body{font-family:Inter,system-ui,Segoe UI,Arial;background:linear-gradient(180de
 .chat-header{font-weight:700;margin-bottom:8px}
 .chat{padding:12px}
 .messages{height:48vh;overflow:auto;padding:8px;border-radius:8px;background:linear-gradient(180deg,#fbfbff,#ffffff);border:1px solid #eef2ff}
-.message-container{margin:12px 0}
+.message-container{margin:12px 0;display:flex;flex-direction:column}
+.message-container.user{align-items:flex-end}
 .message-sender{font-size:12px;color:var(--muted);margin-bottom:4px;padding:0 4px}
-.message-container.user .message-sender{text-align:right}
-.msg{margin:4px 0;padding:10px 14px;border-radius:10px;max-width:76%}
-.msg.user{background:linear-gradient(90deg,var(--accent),#60a5fa);color:white;margin-left:auto}
+.msg{display:inline-block;margin:4px 0;padding:10px 14px;border-radius:10px;max-width:76%;word-break:break-word}
+.msg.user{background:linear-gradient(90deg,var(--accent),#60a5fa);color:white}
 .msg.bot{background:#f1f5ff;color:#0f172a}
 .message-image{max-width:100%;max-height:280px;border-radius:6px;object-fit:contain}
 .inputForm{display:flex;gap:8px;margin-top:12px}
