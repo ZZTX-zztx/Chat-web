@@ -27,14 +27,34 @@ function appendMessage(text, cls='bot'){
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 
+function isBase64Image(content) {
+  return /^data:image\/(png|jpg|jpeg|gif|webp);base64,/i.test(content);
+}
+
 function renderMessage(message){
-  const el = document.createElement('div');
-  const cls = message.sender === getUsername() ? 'msg user' : 'msg bot';
-  el.className = cls;
+  const container = document.createElement('div');
+  const isUser = message.sender === getUsername();
+  container.className = 'message-container' + (isUser ? ' user' : '');
+  
   const sender = message.sender ? message.sender : '系统';
+  const senderEl = document.createElement('div');
+  senderEl.className = 'message-sender';
+  senderEl.textContent = sender;
+  container.appendChild(senderEl);
+  
+  const el = document.createElement('div');
+  const cls = isUser ? 'msg user' : 'msg bot';
+  el.className = cls;
+  
   const content = message.content ? message.content : '';
-  el.innerHTML = `<div class="message-sender">${sender}</div><div>${content}</div>`;
-  messagesEl.appendChild(el);
+  if (isBase64Image(content)) {
+    el.innerHTML = `<img src="${content}" class="message-image" alt="图片消息" />`;
+  } else {
+    el.textContent = content;
+  }
+  
+  container.appendChild(el);
+  messagesEl.appendChild(container);
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 
@@ -147,6 +167,12 @@ downloadWindowsBtn.addEventListener('click', ()=> openDownloadFor('windows'))
 const platform = detectPlatform();
 if (platformHint) {
   platformHint.textContent = platform === 'android' ? '检测到：Android 设备' : platform === 'windows' ? '检测到：Windows 电脑' : '检测不到明确平台，请手动选择下载';
+}
+
+if (platform === 'windows') {
+  downloadAndroidBtn.style.display = 'none';
+} else if (platform === 'android') {
+  downloadWindowsBtn.style.display = 'none';
 }
 
 // --- Auth: show modal if no token ---
