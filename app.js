@@ -17,12 +17,62 @@ const loginPassword = document.getElementById('loginPassword');
 const loginCancel = document.getElementById('loginCancel');
 const loginError = document.getElementById('loginError');
 
+const API_BASE = API_URL.replace(/\/api\/messages$/, '');
+
 function appendMessage(text, cls='bot'){
   const el = document.createElement('div');
   el.className = 'msg ' + cls;
   el.textContent = text;
   messagesEl.appendChild(el);
   messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function renderMessage(message){
+  const el = document.createElement('div');
+  const cls = message.sender === getUsername() ? 'msg user' : 'msg bot';
+  el.className = cls;
+  const sender = message.sender ? message.sender : '系统';
+  const content = message.content ? message.content : '';
+  el.innerHTML = `<div class="message-sender">${sender}</div><div>${content}</div>`;
+  messagesEl.appendChild(el);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function clearMessages(){
+  messagesEl.innerHTML = '';
+}
+
+async function loadMessages(){
+  try{
+    const headers = {'Content-Type':'application/json'};
+    const token = getToken();
+    if(token) headers['Authorization'] = 'Bearer ' + token;
+
+    const resp = await fetch(API_URL, { method: 'GET', headers });
+
+    if(resp.status === 401){
+      setToken(null);
+      openLogin();
+      return;
+    }
+
+    if(!resp.ok) throw new Error('无法拉取消息');
+    const data = await resp.json();
+    if(data.ok && Array.isArray(data.messages)){
+      clearMessages();
+      if(data.messages.length === 0){
+        appendMessage('当前没有云端消息。请输入消息并发送。', 'bot');
+      } else {
+        data.messages.forEach(renderMessage);
+      }
+    } else {
+      clearMessages();
+      appendMessage('消息同步失败，请稍后重试。', 'bot');
+    }
+  }catch(e){
+    clearMessages();
+    appendMessage('同步失败：' + e.message, 'bot');
+  }
 }
 
 async function sendToApi(message){
@@ -34,21 +84,24 @@ async function sendToApi(message){
     const resp = await fetch(API_URL, {
       method: 'POST',
       headers,
-      body: JSON.stringify({message})
+      body: JSON.stringify({content: message, sender: getUsername() || '匿名用户'})
     });
 
     if(resp.status === 401){
-      // token invalid or expired
       setToken(null);
       openLogin();
-      return '未授权，请登录后重试';
+      return { error: '未授权，请登录后重试' };
     }
 
     if(!resp.ok) throw new Error('Network response not ok');
     const data = await resp.json();
-    return data.reply || JSON.stringify(data);
+    if(data.ok){
+      await loadMessages();
+      return { success: true };
+    }
+    return { error: data.error || '发送失败' };
   }catch(e){
-    return '请求失败：' + e.message;
+    return { error: '请求失败：' + e.message };
   }
 }
 
@@ -57,13 +110,14 @@ form.addEventListener('submit', async (e)=>{
   const text = input.value.trim();
   if(!text) return;
   appendMessage(text, 'user');
-  input.value='';
+  input.value = '';
   appendMessage('正在发送…', 'bot');
-  const reply = await sendToApi(text);
-  // remove the last '正在发送…'
+  const result = await sendToApi(text);
   const last = messagesEl.querySelector('.msg.bot:last-child');
   if(last && last.textContent==='正在发送…') last.remove();
-  appendMessage(reply, 'bot');
+  if(result.error){
+    appendMessage(result.error, 'bot');
+  }
 });
 
 // 平台检测与下载处理
@@ -95,24 +149,34 @@ if (platformHint) {
   platformHint.textContent = platform === 'android' ? '检测到：Android 设备' : platform === 'windows' ? '检测到：Windows 电脑' : '检测不到明确平台，请手动选择下载';
 }
 
-// 页面加载提示
-appendMessage('示例：在此输入消息并回车发送。', 'bot');
-
 // --- Auth: show modal if no token ---
 function getToken(){
   return localStorage.getItem('auth_token');
 }
 
-function setToken(token){
-  if(token) localStorage.setItem('auth_token', token);
-  else localStorage.removeItem('auth_token');
+function getUsername(){
+  return localStorage.getItem('auth_username');
+}
+
+function setToken(token, username){
+  if(token){
+    localStorage.setItem('auth_token', token);
+    if(username) localStorage.setItem('auth_username', username);
+  } else {
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('auth_username');
+  }
   updateAuthStatus();
 }
 
 function updateAuthStatus(){
   const t = getToken();
-  authStatus.textContent = t ? '已登录' : '未登录';
+  const username = getUsername();
+  authStatus.textContent = t ? `已登录${username ? '：' + username : ''}` : '未登录';
   authStatus.classList.toggle('logged', !!t);
+  if(openLoginBtn){
+    openLoginBtn.style.display = t ? 'none' : 'inline-flex';
+  }
 }
 
 function openLogin(){
@@ -152,14 +216,16 @@ loginForm.addEventListener('submit', async (e)=>{
   const password = loginPassword.value;
   if(!username || !password){ loginError.textContent = '用户名与密码不能为空'; return; }
   try{
-    const resp = await fetch(API_URL.replace('/api/messages','/api/login'), {
+    const resp = await fetch(`${API_BASE}/api/login`, {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({username, password})
     });
     const data = await resp.json();
     if(resp.ok && data.ok && data.token){
-      setToken(data.token);
+      setToken(data.token, username);
       closeLogin();
+      updateAuthStatus();
+      await loadMessages();
       appendMessage('登录成功，欢迎使用。', 'bot');
     } else {
       loginError.textContent = data.error || '登录失败';
@@ -171,4 +237,6 @@ loginForm.addEventListener('submit', async (e)=>{
 updateAuthStatus();
 if(!getToken()) {
   setTimeout(() => openLogin(), 120);
+} else {
+  loadMessages();
 }
