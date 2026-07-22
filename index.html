@@ -14,6 +14,9 @@
           <div class="hero-left">
             <h1 class="brand">Chat</h1>
           </div>
+          <div class="hero-meta">
+            <div id="authStatus" class="auth-status">未登录</div>
+          </div>
         </div>
       </div>
     </section>
@@ -26,13 +29,34 @@
         <button type="submit" class="btn primary">发送</button>
       </form>
     </section>
-      <section class="download-after">
-        <p class="lead">轻量、安全、随时可用的聊天服务与客户端下载中心。</p>
-        <div class="cta">
-          <button id="downloadAndroid" class="btn primary">下载 Android</button>
-          <button id="downloadWindows" class="btn primary">下载 Windows</button>
-        </div>
-      </section>
+    <section class="download-after">
+      <p class="lead">轻量、安全、随时可用的聊天服务与客户端下载中心。</p>
+      <div class="cta">
+        <button id="downloadAndroid" class="btn primary">下载 Android</button>
+        <button id="downloadWindows" class="btn ghost">下载 Windows</button>
+      </div>
+      <p class="muted small">Android：chat-apk.zztxer.dpdns.org · Windows：chat-windows.zztxer.dpdns.org</p>
+    </section>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal-overlay" aria-hidden="true">
+      <div class="modal">
+        <h3>登录</h3>
+        <form id="loginForm" class="loginForm">
+          <label>用户名
+            <input id="loginUsername" type="text" autocomplete="username" />
+          </label>
+          <label>密码
+            <input id="loginPassword" type="password" autocomplete="current-password" />
+          </label>
+          <div class="modal-actions">
+            <button type="submit" class="btn primary">登录</button>
+            <button type="button" id="loginCancel" class="btn ghost">取消</button>
+          </div>
+          <div id="loginError" class="login-error" aria-live="polite"></div>
+        </form>
+      </div>
+    </div>
   </main>
   <script src="app.js"></script>
 </body>

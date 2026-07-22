@@ -43,3 +43,13 @@ body{font-family:Inter,system-ui,Segoe UI,Arial;background:linear-gradient(180de
 .download-after .lead{font-size:16px;margin-bottom:12px}
 .download-after .cta{display:flex;gap:12px;justify-content:center}
 .download-after .btn{min-width:160px}
+
+/* Login modal */
+.modal-overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(2,6,23,0.5);z-index:40}
+.modal-overlay.show{display:flex}
+.modal{background:white;padding:18px;border-radius:10px;max-width:420px;width:92%;box-shadow:0 10px 30px rgba(11,20,50,0.12)}
+.loginForm label{display:block;margin-bottom:10px}
+.loginForm input{width:100%;padding:10px;border:1px solid #eef2ff;border-radius:8px}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
+.login-error{color:#b00020;margin-top:8px}
+.auth-status{font-size:13px;color:var(--muted);text-align:right}

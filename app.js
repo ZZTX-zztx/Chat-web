@@ -8,6 +8,13 @@ const input = document.getElementById('input');
 const downloadAndroidBtn = document.getElementById('downloadAndroid');
 const downloadWindowsBtn = document.getElementById('downloadWindows');
 const platformHint = document.getElementById('platformHint');
+const authStatus = document.getElementById('authStatus');
+const loginModal = document.getElementById('loginModal');
+const loginForm = document.getElementById('loginForm');
+const loginUsername = document.getElementById('loginUsername');
+const loginPassword = document.getElementById('loginPassword');
+const loginCancel = document.getElementById('loginCancel');
+const loginError = document.getElementById('loginError');
 
 function appendMessage(text, cls='bot'){
   const el = document.createElement('div');
@@ -19,11 +26,23 @@ function appendMessage(text, cls='bot'){
 
 async function sendToApi(message){
   try{
+    const headers = {'Content-Type':'application/json'};
+    const token = getToken();
+    if(token) headers['Authorization'] = 'Bearer ' + token;
+
     const resp = await fetch(API_URL, {
       method: 'POST',
-      headers: {'Content-Type':'application/json'},
+      headers,
       body: JSON.stringify({message})
     });
+
+    if(resp.status === 401){
+      // token invalid or expired
+      setToken(null);
+      openLogin();
+      return '未授权，请登录后重试';
+    }
+
     if(!resp.ok) throw new Error('Network response not ok');
     const data = await resp.json();
     return data.reply || JSON.stringify(data);
@@ -75,3 +94,59 @@ platformHint.textContent = platform === 'android' ? '检测到：Android 设备'
 
 // 页面加载提示
 appendMessage('示例：在此输入消息并回车发送。', 'bot');
+
+// --- Auth: show modal if no token ---
+function getToken(){
+  return localStorage.getItem('auth_token');
+}
+
+function setToken(token){
+  if(token) localStorage.setItem('auth_token', token);
+  else localStorage.removeItem('auth_token');
+  updateAuthStatus();
+}
+
+function updateAuthStatus(){
+  const t = getToken();
+  authStatus.textContent = t ? '已登录' : '未登录';
+}
+
+function openLogin(){
+  loginError.textContent = '';
+  loginUsername.value = '';
+  loginPassword.value = '';
+  loginModal.classList.add('show');
+  loginModal.setAttribute('aria-hidden', 'false');
+}
+
+function closeLogin(){
+  loginModal.classList.remove('show');
+  loginModal.setAttribute('aria-hidden', 'true');
+}
+
+loginCancel.addEventListener('click', ()=> closeLogin());
+
+loginForm.addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  loginError.textContent = '';
+  const username = loginUsername.value.trim();
+  const password = loginPassword.value;
+  if(!username || !password){ loginError.textContent = '用户名与密码不能为空'; return; }
+  try{
+    const resp = await fetch(API_URL.replace('/api/messages','/api/login'), {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({username, password})
+    });
+    const data = await resp.json();
+    if(resp.ok && data.ok && data.token){
+      setToken(data.token);
+      closeLogin();
+    } else {
+      loginError.textContent = data.error || '登录失败';
+    }
+  }catch(err){ loginError.textContent = '网络错误：' + err.message }
+});
+
+// show login modal when no token
+updateAuthStatus();
+if(!getToken()) openLogin();
