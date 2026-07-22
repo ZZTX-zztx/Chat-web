@@ -40,10 +40,11 @@ function isBase64Image(content) {
 
 function renderMessage(message){
   const container = document.createElement('div');
-  const isUser = message.sender === getUsername();
+  const username = getUsername();
+  const sender = message.sender || '系统';
+  const isUser = sender === username || (!username && sender === '匿名用户');
   container.className = 'message-container' + (isUser ? ' user' : '');
   
-  const sender = message.sender ? message.sender : '系统';
   const senderEl = document.createElement('div');
   senderEl.className = 'message-sender';
   senderEl.textContent = sender;
