@@ -1,0 +1,28 @@
+:root{
+  --bg:#f6f7fb;
+  --card:#ffffff;
+  --accent:#3b82f6;
+  --muted:#6b7280;
+}
+*{box-sizing:border-box}
+body{font-family:Inter,system-ui,Segoe UI,Arial;background:var(--bg);color:#111;margin:0;padding:24px}
+.app{max-width:720px;margin:0 auto}
+.header{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.subtitle{color:var(--muted);margin:0}
+.download-section{display:flex;gap:18px;align-items:flex-start;margin-bottom:16px}
+.download-left{flex:1}
+.download-right{width:280px;background:#fff;border-radius:8px;padding:12px;border:1px solid #eef2ff}
+.cards{display:flex;gap:12px;margin-top:10px}
+.card{flex:1;background:linear-gradient(180deg,#ffffff,#fbfbff);border-radius:8px;padding:12px;border:1px solid #eef2ff;display:flex;flex-direction:column;gap:8px}
+.card-title{font-weight:600}
+.card-desc{color:var(--muted);font-size:13px}
+.card button{margin-top:auto;padding:10px;border:none;background:var(--accent);color:white;border-radius:6px}
+.muted{color:var(--muted)}
+.chat{background:var(--card);border-radius:8px;box-shadow:0 6px 20px rgba(16,24,40,.08);padding:16px}
+.messages{height:50vh;overflow:auto;padding:8px;border:1px solid #eef2ff;border-radius:6px;background:#fbfbff}
+.msg{margin:8px 0;padding:8px 12px;border-radius:6px;max-width:80%}
+.msg.user{background:linear-gradient(90deg,var(--accent),#60a5fa);color:white;margin-left:auto}
+.msg.bot{background:#eef2ff;color:#0f172a}
+.inputForm{display:flex;gap:8px;margin-top:12px}
+.inputForm input{flex:1;padding:10px;border:1px solid #e6e9ef;border-radius:6px}
+.inputForm button{padding:10px 14px;border:none;background:var(--accent);color:white;border-radius:6px}

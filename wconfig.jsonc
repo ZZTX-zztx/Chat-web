@@ -1,0 +1,10 @@
+{
+  // Cloudflare Worker 配置（JSONC 可包含注释）
+  // 已将文件名以 w 开头，方便区分
+  "name": "chat-worker-sample",
+  "main": "worker.js",
+  "compatibility_date": "2026-07-22",
+  "routes": [
+    "chat.zztxer.dpdns.org/api/messages"
+  ]
+}
