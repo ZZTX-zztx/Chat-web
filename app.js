@@ -8,6 +8,7 @@ const input = document.getElementById('input');
 const downloadAndroidBtn = document.getElementById('downloadAndroid');
 const downloadWindowsBtn = document.getElementById('downloadWindows');
 const platformHint = document.getElementById('platformHint');
+const downloadSection = document.querySelector('.download-after');
 const authStatus = document.getElementById('authStatus');
 const openLoginBtn = document.getElementById('openLoginBtn');
 const logoutBtn = document.getElementById('logoutBtn');
@@ -212,6 +213,11 @@ function detectPlatform(){
   return 'other';
 }
 
+function isMobile(){
+  const ua = navigator.userAgent || '';
+  return /android|iphone|ipad|ipod|mobile|tablet/i.test(ua);
+}
+
 function openDownloadFor(platform){
   if(platform === 'android'){
     // 跳转到 Android 域名（可根据需要改为具体 apk 路径）
@@ -229,14 +235,20 @@ downloadAndroidBtn.addEventListener('click', ()=> openDownloadFor('android'))
 downloadWindowsBtn.addEventListener('click', ()=> openDownloadFor('windows'))
 
 const platform = detectPlatform();
-if (platformHint) {
-  platformHint.textContent = platform === 'android' ? '检测到：Android 设备' : platform === 'windows' ? '检测到：Windows 电脑' : '检测不到明确平台，请手动选择下载';
-}
+const mobile = isMobile();
 
-if (platform === 'windows') {
-  downloadAndroidBtn.style.display = 'none';
-} else if (platform === 'android') {
-  downloadWindowsBtn.style.display = 'none';
+if (mobile && downloadSection) {
+  downloadSection.style.display = 'none';
+} else {
+  if (platformHint) {
+    platformHint.textContent = platform === 'android' ? '检测到：Android 设备' : platform === 'windows' ? '检测到：Windows 电脑' : '检测不到明确平台，请手动选择下载';
+  }
+
+  if (platform === 'windows') {
+    downloadAndroidBtn.style.display = 'none';
+  } else if (platform === 'android') {
+    downloadWindowsBtn.style.display = 'none';
+  }
 }
 
 // --- Auth: show modal if no token ---
