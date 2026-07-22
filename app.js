@@ -244,34 +244,30 @@ function openDownloadFor(platform){
 downloadAndroidBtn.addEventListener('click', ()=> openDownloadFor('android'))
 downloadWindowsBtn.addEventListener('click', ()=> openDownloadFor('windows'))
 
-const platform = detectPlatform();
-const mobile = isMobile();
-const localApp = isLocalApp();
-const localPlatform = getLocalPlatform();
-
-if (localApp && downloadSection) {
-  downloadSection.style.display = 'none';
-  console.log('检测到本地应用 - 已隐藏下载区域');
-} else if (mobile && downloadSection) {
-  downloadSection.style.display = 'none';
-  console.log('检测到移动端 - 已隐藏下载区域');
-} else {
-  if (platformHint) {
-    platformHint.textContent = platform === 'android' ? '检测到：Android 设备' : platform === 'windows' ? '检测到：Windows 电脑' : '检测不到明确平台，请手动选择下载';
-  }
-
-  if (platform === 'windows') {
-    downloadAndroidBtn.style.display = 'none';
-  } else if (platform === 'android') {
-    downloadWindowsBtn.style.display = 'none';
-  }
-}
-
 document.addEventListener('DOMContentLoaded', function() {
-  if (localApp) {
+  const platform = detectPlatform();
+  const mobile = isMobile();
+  const localApp = isLocalApp();
+  const localPlatform = getLocalPlatform();
+
+  if (localApp && downloadSection) {
+    downloadSection.style.display = 'none';
+    console.log('检测到本地应用 - 已隐藏下载区域');
     window.isLocalApp = true;
     window.localAppPlatform = localPlatform;
-    console.log('本地应用模式已激活:', localPlatform);
+  } else if (mobile && downloadSection) {
+    downloadSection.style.display = 'none';
+    console.log('检测到移动端 - 已隐藏下载区域');
+  } else {
+    if (platformHint) {
+      platformHint.textContent = platform === 'android' ? '检测到：Android 设备' : platform === 'windows' ? '检测到：Windows 电脑' : '检测不到明确平台，请手动选择下载';
+    }
+
+    if (platform === 'windows') {
+      downloadAndroidBtn.style.display = 'none';
+    } else if (platform === 'android') {
+      downloadWindowsBtn.style.display = 'none';
+    }
   }
 });
 
