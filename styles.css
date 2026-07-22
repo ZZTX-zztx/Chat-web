@@ -54,11 +54,11 @@ body{font-family:Inter,system-ui,Segoe UI,Arial;background:linear-gradient(180de
 .modal-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
 .modal-header h3{margin:0;font-size:20px}
 .modal-header p{margin:4px 0 0;color:var(--muted);font-size:13px}
-.icon-btn{border:none;background:#f5f7ff;color:#334155;border-radius:999px;width:32px;height:32px;cursor:pointer}
 .loginForm label{display:block;margin-bottom:12px;font-weight:600;font-size:14px}
 .loginForm input{width:100%;padding:12px;border:1px solid #dde6f7;border-radius:10px;outline:none;transition:border-color .2s, box-shadow .2s}
 .loginForm input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,130,246,0.16)}
 .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+.modal-actions .btn{min-width:92px}
 .login-error{color:#b00020;margin-top:10px;min-height:18px;font-size:13px}
 .auth-status{font-size:13px;color:var(--muted);text-align:right}
 .auth-status.logged{color:#166534;font-weight:600}

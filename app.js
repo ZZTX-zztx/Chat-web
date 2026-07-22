@@ -15,7 +15,6 @@ const loginForm = document.getElementById('loginForm');
 const loginUsername = document.getElementById('loginUsername');
 const loginPassword = document.getElementById('loginPassword');
 const loginCancel = document.getElementById('loginCancel');
-const loginClose = document.getElementById('loginClose');
 const loginError = document.getElementById('loginError');
 
 function appendMessage(text, cls='bot'){
@@ -140,8 +139,10 @@ if (openLoginBtn) {
 if (loginCancel) {
   loginCancel.addEventListener('click', () => closeLogin());
 }
-if (loginClose) {
-  loginClose.addEventListener('click', () => closeLogin());
+if (loginModal) {
+  loginModal.addEventListener('click', (e) => {
+    if (e.target === loginModal) closeLogin();
+  });
 }
 
 loginForm.addEventListener('submit', async (e)=>{
