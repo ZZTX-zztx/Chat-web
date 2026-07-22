@@ -8,43 +8,33 @@
 </head>
 <body>
   <main class="app">
-    <header class="header">
-      <h1>Chat Web</h1>
-      <p class="subtitle">网页聊天 + 一键下载安装（Android / Windows）</p>
-    </header>
-
-    <section class="download-section">
-      <div class="download-left">
-        <h2>下载应用</h2>
-        <p id="platformHint" class="muted">检测平台...</p>
-        <div class="cards">
-          <div class="card" id="card-android">
-            <div class="card-title">Android 版</div>
-            <div class="card-desc">适用于手机和平板</div>
-            <button id="downloadAndroid">下载并安装</button>
+    <section class="hero">
+      <div class="container">
+        <div class="hero-content">
+          <div class="hero-left">
+            <h1 class="brand">Chat</h1>
+            <p class="lead">轻量、安全、随时可用的聊天服务与客户端下载中心。</p>
+            <div class="cta">
+              <button id="downloadAndroid" class="btn primary">下载 Android</button>
+              <button id="downloadWindows" class="btn ghost">下载 Windows</button>
+            </div>
+            <p class="muted small">Android：chat-apk.zztxer.dpdns.org · Windows：chat-windows.zztxer.dpdns.org</p>
           </div>
-          <div class="card" id="card-windows">
-            <div class="card-title">Windows 版</div>
-            <div class="card-desc">适用于桌面安装程序</div>
-            <button id="downloadWindows">下载并安装</button>
+          <div class="hero-right">
+            <div class="device-mock">
+              <div class="screen">在线聊天演示</div>
+            </div>
           </div>
         </div>
       </div>
-      <div class="download-right">
-        <h3>说明</h3>
-        <ul>
-          <li>Android 下载：<a href="https://chat-apk.zztxer.dpdns.org" target="_blank">chat-apk.zztxer.dpdns.org</a></li>
-          <li>Windows 下载：<a href="https://chat-windows.zztxer.dpdns.org" target="_blank">chat-windows.zztxer.dpdns.org</a></li>
-          <li>如果浏览器阻止安装，请在设备上允许来源安装（Android）或以管理员身份运行安装程序（Windows）。</li>
-        </ul>
-      </div>
     </section>
 
-    <section id="chat" class="chat">
+    <section id="chat" class="chat card">
+      <div class="chat-header">即时消息</div>
       <div id="messages" class="messages"></div>
       <form id="inputForm" class="inputForm">
         <input id="input" type="text" placeholder="输入消息并回车发送" autocomplete="off" />
-        <button type="submit">发送</button>
+        <button type="submit" class="btn primary">发送</button>
       </form>
     </section>
   </main>
