@@ -9,11 +9,13 @@ const downloadAndroidBtn = document.getElementById('downloadAndroid');
 const downloadWindowsBtn = document.getElementById('downloadWindows');
 const platformHint = document.getElementById('platformHint');
 const authStatus = document.getElementById('authStatus');
+const openLoginBtn = document.getElementById('openLoginBtn');
 const loginModal = document.getElementById('loginModal');
 const loginForm = document.getElementById('loginForm');
 const loginUsername = document.getElementById('loginUsername');
 const loginPassword = document.getElementById('loginPassword');
 const loginCancel = document.getElementById('loginCancel');
+const loginClose = document.getElementById('loginClose');
 const loginError = document.getElementById('loginError');
 
 function appendMessage(text, cls='bot'){
@@ -90,7 +92,9 @@ downloadAndroidBtn.addEventListener('click', ()=> openDownloadFor('android'))
 downloadWindowsBtn.addEventListener('click', ()=> openDownloadFor('windows'))
 
 const platform = detectPlatform();
-platformHint.textContent = platform === 'android' ? '检测到：Android 设备' : platform === 'windows' ? '检测到：Windows 电脑' : '检测不到明确平台，请手动选择下载';
+if (platformHint) {
+  platformHint.textContent = platform === 'android' ? '检测到：Android 设备' : platform === 'windows' ? '检测到：Windows 电脑' : '检测不到明确平台，请手动选择下载';
+}
 
 // 页面加载提示
 appendMessage('示例：在此输入消息并回车发送。', 'bot');
@@ -109,22 +113,36 @@ function setToken(token){
 function updateAuthStatus(){
   const t = getToken();
   authStatus.textContent = t ? '已登录' : '未登录';
+  authStatus.classList.toggle('logged', !!t);
 }
 
 function openLogin(){
   loginError.textContent = '';
   loginUsername.value = '';
   loginPassword.value = '';
-  loginModal.classList.add('show');
-  loginModal.setAttribute('aria-hidden', 'false');
+  if (loginModal) {
+    loginModal.classList.add('show');
+    loginModal.setAttribute('aria-hidden', 'false');
+  }
 }
 
 function closeLogin(){
-  loginModal.classList.remove('show');
-  loginModal.setAttribute('aria-hidden', 'true');
+  if (loginModal) {
+    loginModal.classList.remove('show');
+    loginModal.setAttribute('aria-hidden', 'true');
+  }
 }
 
-loginCancel.addEventListener('click', ()=> closeLogin());
+if (openLoginBtn) {
+  openLoginBtn.addEventListener('click', () => openLogin());
+}
+
+if (loginCancel) {
+  loginCancel.addEventListener('click', () => closeLogin());
+}
+if (loginClose) {
+  loginClose.addEventListener('click', () => closeLogin());
+}
 
 loginForm.addEventListener('submit', async (e)=>{
   e.preventDefault();
@@ -141,6 +159,7 @@ loginForm.addEventListener('submit', async (e)=>{
     if(resp.ok && data.ok && data.token){
       setToken(data.token);
       closeLogin();
+      appendMessage('登录成功，欢迎使用。', 'bot');
     } else {
       loginError.textContent = data.error || '登录失败';
     }
@@ -149,4 +168,6 @@ loginForm.addEventListener('submit', async (e)=>{
 
 // show login modal when no token
 updateAuthStatus();
-if(!getToken()) openLogin();
+if(!getToken()) {
+  setTimeout(() => openLogin(), 120);
+}

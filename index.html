@@ -16,6 +16,7 @@
           </div>
           <div class="hero-meta">
             <div id="authStatus" class="auth-status">未登录</div>
+            <button id="openLoginBtn" class="btn small ghost">登录</button>
           </div>
         </div>
       </div>
@@ -31,6 +32,7 @@
     </section>
     <section class="download-after">
       <p class="lead">轻量、安全、随时可用的聊天服务与客户端下载中心。</p>
+      <p id="platformHint" class="muted small platform-hint">检测平台...</p>
       <div class="cta">
         <button id="downloadAndroid" class="btn primary">下载 Android</button>
         <button id="downloadWindows" class="btn primary">下载 Windows</button>
@@ -40,7 +42,13 @@
     <!-- Login Modal -->
     <div id="loginModal" class="modal-overlay" aria-hidden="true">
       <div class="modal">
-        <h3>登录</h3>
+        <div class="modal-header">
+          <div>
+            <h3>登录</h3>
+            <p>请输入你的用户名和密码</p>
+          </div>
+          <button type="button" id="loginClose" class="icon-btn" aria-label="关闭">×</button>
+        </div>
         <form id="loginForm" class="loginForm">
           <label>用户名
             <input id="loginUsername" type="text" autocomplete="username" />
