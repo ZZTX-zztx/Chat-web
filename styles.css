@@ -37,3 +37,9 @@ body{font-family:Inter,system-ui,Segoe UI,Arial;background:linear-gradient(180de
 .inputForm{display:flex;gap:8px;margin-top:12px}
 .inputForm input{flex:1;padding:12px;border:1px solid #eef2ff;border-radius:10px}
 .inputForm button{padding:10px 16px;border:none;background:linear-gradient(90deg,var(--accent),#60a5fa);color:white;border-radius:10px}
+
+/* download-after spacing */
+.download-after{margin-top:28px;text-align:center;padding:14px;border-radius:10px}
+.download-after .lead{font-size:16px;margin-bottom:12px}
+.download-after .cta{display:flex;gap:12px;justify-content:center}
+.download-after .btn{min-width:160px}
