@@ -40,6 +40,7 @@ function isBase64Image(content) {
 
 function renderMessage(message){
   const container = document.createElement('div');
+  container.dataset.messageId = message.id;
   const username = getUsername();
   const sender = message.sender || '系统';
   const isUser = sender === username || (!username && sender === '匿名用户');
@@ -55,10 +56,34 @@ function renderMessage(message){
   el.className = cls;
   
   const content = message.content ? message.content : '';
-  if (isBase64Image(content)) {
+  if (message.deleted) {
+    el.textContent = '[消息已撤回]';
+    el.style.fontStyle = 'italic';
+    el.style.opacity = '0.6';
+  } else if (isBase64Image(content)) {
     el.innerHTML = `<img src="${content}" class="message-image" alt="图片消息" />`;
   } else {
     el.textContent = content;
+  }
+  
+  if (isUser && !message.deleted && message.id) {
+    const now = Date.now();
+    const messageTime = message.timestamp ? parseInt(message.timestamp) : now;
+    const diff = now - messageTime;
+    
+    if (diff < 20000) {
+      const recallBtn = document.createElement('button');
+      recallBtn.className = 'recall-btn';
+      recallBtn.textContent = '撤回';
+      recallBtn.addEventListener('click', () => recallMessage(message.id));
+      el.appendChild(recallBtn);
+      
+      setTimeout(() => {
+        if (recallBtn.parentNode) {
+          recallBtn.remove();
+        }
+      }, 20000 - diff);
+    }
   }
   
   container.appendChild(el);
@@ -68,6 +93,35 @@ function renderMessage(message){
 
 function clearMessages(){
   messagesEl.innerHTML = '';
+}
+
+async function recallMessage(messageId){
+  try{
+    const headers = {'Content-Type':'application/json'};
+    const token = getToken();
+    if(token) headers['Authorization'] = 'Bearer ' + token;
+
+    const resp = await fetch(`${API_BASE}/api/messages/${messageId}/recall`, {
+      method: 'POST',
+      headers
+    });
+
+    if(resp.status === 401){
+      setToken(null);
+      openLogin();
+      return;
+    }
+
+    if(!resp.ok) throw new Error('撤回失败');
+    const data = await resp.json();
+    if(data.ok){
+      await loadMessages();
+    } else {
+      appendMessage(data.error || '撤回失败', 'bot');
+    }
+  }catch(e){
+    appendMessage('撤回失败：' + e.message, 'bot');
+  }
 }
 
 async function loadMessages(){
@@ -109,10 +163,12 @@ async function sendToApi(message){
     const token = getToken();
     if(token) headers['Authorization'] = 'Bearer ' + token;
 
+    const sender = getUsername();
+    
     const resp = await fetch(API_URL, {
       method: 'POST',
       headers,
-      body: JSON.stringify({content: message, sender: getUsername() || '匿名用户'})
+      body: JSON.stringify({content: message, sender: sender || '匿名用户'})
     });
 
     if(resp.status === 401){
@@ -274,7 +330,6 @@ loginForm.addEventListener('submit', async (e)=>{
       closeLogin();
       updateAuthStatus();
       await loadMessages();
-      appendMessage('登录成功，欢迎使用。', 'bot');
     } else {
       loginError.textContent = data.error || '登录失败';
     }
@@ -283,6 +338,7 @@ loginForm.addEventListener('submit', async (e)=>{
 
 // show login modal when no token
 updateAuthStatus();
+
 if(!getToken()) {
   setTimeout(() => openLogin(), 120);
 } else {
