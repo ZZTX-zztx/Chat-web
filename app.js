@@ -218,6 +218,16 @@ function isMobile(){
   return /android|iphone|ipad|ipod|mobile|tablet/i.test(ua);
 }
 
+function isLocalApp(){
+  const params = new URLSearchParams(window.location.search);
+  return params.get('app') === 'local';
+}
+
+function getLocalPlatform(){
+  const params = new URLSearchParams(window.location.search);
+  return params.get('platform') || 'windows';
+}
+
 function openDownloadFor(platform){
   if(platform === 'android'){
     // 跳转到 Android 域名（可根据需要改为具体 apk 路径）
@@ -236,9 +246,15 @@ downloadWindowsBtn.addEventListener('click', ()=> openDownloadFor('windows'))
 
 const platform = detectPlatform();
 const mobile = isMobile();
+const localApp = isLocalApp();
+const localPlatform = getLocalPlatform();
 
-if (mobile && downloadSection) {
+if (localApp && downloadSection) {
   downloadSection.style.display = 'none';
+  console.log('检测到本地应用 - 已隐藏下载区域');
+} else if (mobile && downloadSection) {
+  downloadSection.style.display = 'none';
+  console.log('检测到移动端 - 已隐藏下载区域');
 } else {
   if (platformHint) {
     platformHint.textContent = platform === 'android' ? '检测到：Android 设备' : platform === 'windows' ? '检测到：Windows 电脑' : '检测不到明确平台，请手动选择下载';
@@ -250,6 +266,14 @@ if (mobile && downloadSection) {
     downloadWindowsBtn.style.display = 'none';
   }
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+  if (localApp) {
+    window.isLocalApp = true;
+    window.localAppPlatform = localPlatform;
+    console.log('本地应用模式已激活:', localPlatform);
+  }
+});
 
 // --- Auth: show modal if no token ---
 function getToken(){
