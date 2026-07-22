@@ -10,6 +10,7 @@ const downloadWindowsBtn = document.getElementById('downloadWindows');
 const platformHint = document.getElementById('platformHint');
 const authStatus = document.getElementById('authStatus');
 const openLoginBtn = document.getElementById('openLoginBtn');
+const logoutBtn = document.getElementById('logoutBtn');
 const loginModal = document.getElementById('loginModal');
 const loginForm = document.getElementById('loginForm');
 const loginUsername = document.getElementById('loginUsername');
@@ -20,10 +21,16 @@ const loginError = document.getElementById('loginError');
 const API_BASE = API_URL.replace(/\/api\/messages$/, '');
 
 function appendMessage(text, cls='bot'){
+  const container = document.createElement('div');
+  const isUser = cls === 'user';
+  container.className = 'message-container' + (isUser ? ' user' : '');
+  
   const el = document.createElement('div');
   el.className = 'msg ' + cls;
   el.textContent = text;
-  messagesEl.appendChild(el);
+  container.appendChild(el);
+  
+  messagesEl.appendChild(container);
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 
@@ -203,6 +210,20 @@ function updateAuthStatus(){
   if(openLoginBtn){
     openLoginBtn.style.display = t ? 'none' : 'inline-flex';
   }
+  if(logoutBtn){
+    logoutBtn.style.display = t ? 'inline-flex' : 'none';
+  }
+}
+
+function logout(){
+  setToken(null);
+  clearMessages();
+  appendMessage('已退出登录，请重新登录。', 'bot');
+  openLogin();
+}
+
+if(logoutBtn){
+  logoutBtn.addEventListener('click', logout);
 }
 
 function openLogin(){
