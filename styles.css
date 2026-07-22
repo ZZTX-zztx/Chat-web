@@ -13,7 +13,8 @@ body{font-family:Inter,system-ui,Segoe UI,Arial;background:linear-gradient(180de
 .container{padding:0 20px}
 .hero-content{display:flex;align-items:center;justify-content:space-between;gap:32px}
 .hero-left{flex:1}
-.brand{font-size:44px;margin:0;letter-spacing:0.4px}
+.brand{font-size:44px;margin:0;letter-spacing:0.4px;display:flex;align-items:center;gap:10px}
+.brand-icon{width:36px;height:36px;object-fit:contain;border-radius:8px}
 .lead{margin:12px 0;color:var(--muted);font-size:16px}
 .cta{display:flex;gap:12px;margin-top:14px}
 .btn{padding:10px 14px;border-radius:8px;border:1px solid transparent;cursor:pointer;font-weight:600}
