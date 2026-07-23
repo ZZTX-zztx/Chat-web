@@ -255,9 +255,15 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('检测到本地应用 - 已隐藏下载区域');
     window.isLocalApp = true;
     window.localAppPlatform = localPlatform;
-  } else if (mobile && downloadSection) {
+  } else if (mobile && platform === 'android') {
+    if (platformHint) {
+      platformHint.textContent = '检测到：Android 设备';
+    }
+    downloadWindowsBtn.style.display = 'none';
+    console.log('检测到Android移动端 - 仅显示Android下载');
+  } else if (mobile && platform !== 'android') {
     downloadSection.style.display = 'none';
-    console.log('检测到移动端 - 已隐藏下载区域');
+    console.log('检测到非Android移动端 - 隐藏下载区域');
   } else {
     if (platformHint) {
       platformHint.textContent = platform === 'android' ? '检测到：Android 设备' : platform === 'windows' ? '检测到：Windows 电脑' : '检测不到明确平台，请手动选择下载';
