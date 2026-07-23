@@ -462,6 +462,26 @@ authForm.addEventListener('submit', async (e)=>{
   }
 });
 
+let messageRefreshInterval = null;
+
+function startMessageRefresh() {
+  if (messageRefreshInterval) {
+    clearInterval(messageRefreshInterval);
+  }
+  messageRefreshInterval = setInterval(() => {
+    if (getToken()) {
+      loadMessages();
+    }
+  }, 1000);
+}
+
+function stopMessageRefresh() {
+  if (messageRefreshInterval) {
+    clearInterval(messageRefreshInterval);
+    messageRefreshInterval = null;
+  }
+}
+
 // Request notification permission on load
 requestNotificationPermission();
 
@@ -472,4 +492,5 @@ if(!getToken()) {
   setTimeout(() => openLogin(), 120);
 } else {
   loadMessages();
+  startMessageRefresh();
 }
