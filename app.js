@@ -152,6 +152,10 @@ async function loadMessages(){
       clearMessages();
       appendMessage('消息同步失败，请稍后重试。', 'bot');
     }
+    
+    setTimeout(() => {
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }, 50);
   }catch(e){
     clearMessages();
     appendMessage('同步失败：' + e.message, 'bot');
