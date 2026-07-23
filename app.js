@@ -234,14 +234,12 @@ function getLocalPlatform(){
 
 function openDownloadFor(platform){
   if(platform === 'android'){
-    // 跳转到 Android 域名（可根据需要改为具体 apk 路径）
-    window.location.href = 'https://chat-apk.zztxer.dpdns.org';
+    window.location.href = 'https://chat-apk.zztxer.dpdns.org/download';
   } else if(platform === 'windows'){
-    window.location.href = 'https://chat-windows.zztxer.dpdns.org';
+    window.location.href = 'https://chat-windows.zztxer.dpdns.org/download';
   } else {
-    // 弹出选择
     const choose = confirm('检测不到明确平台，是否前往 Android 版本？点击取消前往 Windows 版本。');
-    window.location.href = choose ? 'https://chat-apk.zztxer.dpdns.org' : 'https://chat-windows.zztxer.dpdns.org';
+    window.location.href = choose ? 'https://chat-apk.zztxer.dpdns.org/download' : 'https://chat-windows.zztxer.dpdns.org/download';
   }
 }
 
