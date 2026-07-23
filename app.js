@@ -13,11 +13,17 @@ const authStatus = document.getElementById('authStatus');
 const openLoginBtn = document.getElementById('openLoginBtn');
 const logoutBtn = document.getElementById('logoutBtn');
 const loginModal = document.getElementById('loginModal');
-const loginForm = document.getElementById('loginForm');
-const loginUsername = document.getElementById('loginUsername');
-const loginPassword = document.getElementById('loginPassword');
-const loginCancel = document.getElementById('loginCancel');
-const loginError = document.getElementById('loginError');
+const authForm = document.getElementById('authForm');
+const authUsername = document.getElementById('authUsername');
+const authPassword = document.getElementById('authPassword');
+const authCancel = document.getElementById('authCancel');
+const authError = document.getElementById('authError');
+const authModalTitle = document.getElementById('authModalTitle');
+const authModalDesc = document.getElementById('authModalDesc');
+const authSubmit = document.getElementById('authSubmit');
+const authSwitch = document.getElementById('authSwitch');
+
+let isLoginMode = true;
 
 const API_BASE = API_URL.replace(/\/api\/messages$/, '');
 
@@ -324,9 +330,29 @@ if(logoutBtn){
 }
 
 function openLogin(){
-  loginError.textContent = '';
-  loginUsername.value = '';
-  loginPassword.value = '';
+  isLoginMode = true;
+  authError.textContent = '';
+  authUsername.value = '';
+  authPassword.value = '';
+  authModalTitle.textContent = '登录';
+  authModalDesc.textContent = '请输入你的用户名和密码';
+  authSubmit.textContent = '登录';
+  authSwitch.textContent = '还没有账号？点击注册';
+  if (loginModal) {
+    loginModal.classList.add('show');
+    loginModal.setAttribute('aria-hidden', 'false');
+  }
+}
+
+function openRegister(){
+  isLoginMode = false;
+  authError.textContent = '';
+  authUsername.value = '';
+  authPassword.value = '';
+  authModalTitle.textContent = '注册';
+  authModalDesc.textContent = '请设置你的用户名和密码';
+  authSubmit.textContent = '注册';
+  authSwitch.textContent = '已有账号？点击登录';
   if (loginModal) {
     loginModal.classList.add('show');
     loginModal.setAttribute('aria-hidden', 'false');
@@ -340,27 +366,55 @@ function closeLogin(){
   }
 }
 
+function toggleAuthMode(){
+  if(isLoginMode){
+    openRegister();
+  } else {
+    openLogin();
+  }
+}
+
 if (openLoginBtn) {
   openLoginBtn.addEventListener('click', () => openLogin());
 }
 
-if (loginCancel) {
-  loginCancel.addEventListener('click', () => closeLogin());
+if (authCancel) {
+  authCancel.addEventListener('click', () => closeLogin());
 }
+
+if (authSwitch) {
+  authSwitch.addEventListener('click', toggleAuthMode);
+}
+
 if (loginModal) {
   loginModal.addEventListener('click', (e) => {
     if (e.target === loginModal) closeLogin();
   });
 }
 
-loginForm.addEventListener('submit', async (e)=>{
+authForm.addEventListener('submit', async (e)=>{
   e.preventDefault();
-  loginError.textContent = '';
-  const username = loginUsername.value.trim();
-  const password = loginPassword.value;
-  if(!username || !password){ loginError.textContent = '用户名与密码不能为空'; return; }
+  authError.textContent = '';
+  const username = authUsername.value.trim();
+  const password = authPassword.value;
+  if(!username || !password){ 
+    authError.textContent = '用户名与密码不能为空'; 
+    return; 
+  }
+  
+  if(!isLoginMode && username.length < 3){
+    authError.textContent = '用户名至少需要3个字符';
+    return;
+  }
+  
+  if(password.length < 6){
+    authError.textContent = '密码至少需要6个字符';
+    return;
+  }
+  
   try{
-    const resp = await fetch(`${API_BASE}/api/login`, {
+    const endpoint = isLoginMode ? '/api/login' : '/api/register';
+    const resp = await fetch(`${API_BASE}${endpoint}`, {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({username, password})
     });
@@ -371,9 +425,11 @@ loginForm.addEventListener('submit', async (e)=>{
       updateAuthStatus();
       await loadMessages();
     } else {
-      loginError.textContent = data.error || '登录失败';
+      authError.textContent = data.error || (isLoginMode ? '登录失败' : '注册失败');
     }
-  }catch(err){ loginError.textContent = '网络错误：' + err.message }
+  }catch(err){ 
+    authError.textContent = '网络错误：' + err.message 
+  }
 });
 
 // show login modal when no token

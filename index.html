@@ -47,23 +47,26 @@
       <div class="modal">
         <div class="modal-header">
           <div>
-            <h3>登录</h3>
-            <p>请输入你的用户名和密码</p>
+            <h3 id="authModalTitle">登录</h3>
+            <p id="authModalDesc">请输入你的用户名和密码</p>
           </div>
         </div>
-        <form id="loginForm" class="loginForm">
+        <form id="authForm" class="loginForm">
           <label>用户名
-            <input id="loginUsername" type="text" autocomplete="username" />
+            <input id="authUsername" type="text" autocomplete="username" />
           </label>
           <label>密码
-            <input id="loginPassword" type="password" autocomplete="current-password" />
+            <input id="authPassword" type="password" autocomplete="current-password" />
           </label>
           <div class="modal-actions">
-            <button type="submit" class="btn primary">登录</button>
-            <button type="button" id="loginCancel" class="btn ghost">取消</button>
+            <button type="submit" id="authSubmit" class="btn primary">登录</button>
+            <button type="button" id="authCancel" class="btn ghost">取消</button>
           </div>
-          <div id="loginError" class="login-error" aria-live="polite"></div>
+          <div id="authError" class="login-error" aria-live="polite"></div>
         </form>
+        <p id="authSwitch" class="small" style="text-align:center;margin-top:12px;color:var(--accent);cursor:pointer">
+          还没有账号？点击注册
+        </p>
       </div>
     </div>
   </main>
