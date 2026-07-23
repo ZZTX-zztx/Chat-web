@@ -1,6 +1,5 @@
 // 简单前端聊天逻辑 + 下载按钮
 const API_URL = 'https://chat.zztxer.dpdns.org/api/messages'; // 已配置为完整路径
-const WEB_VERSION = '1.0.0';
 
 const messagesEl = document.getElementById('messages');
 const form = document.getElementById('inputForm');
@@ -21,24 +20,6 @@ const loginCancel = document.getElementById('loginCancel');
 const loginError = document.getElementById('loginError');
 
 const API_BASE = API_URL.replace(/\/api\/messages$/, '');
-
-async function checkWebUpdate() {
-  try {
-    const response = await fetch(`${API_BASE}/api/version/web`);
-    const data = await response.json();
-    
-    if (data.ok && data.versionName) {
-      const latestVersion = data.versionName;
-      if (latestVersion !== WEB_VERSION) {
-        if (confirm(`发现新版本 ${latestVersion}，是否刷新页面更新？`)) {
-          window.location.reload(true);
-        }
-      }
-    }
-  } catch (e) {
-    console.log('检查Web更新失败:', e);
-  }
-}
 
 function appendMessage(text, cls='bot'){
   const container = document.createElement('div');
@@ -405,7 +386,3 @@ if(!getToken()) {
 } else {
   loadMessages();
 }
-
-document.addEventListener('DOMContentLoaded', function() {
-  checkWebUpdate();
-});
