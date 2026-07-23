@@ -34,14 +34,18 @@ function requestNotificationPermission() {
 }
 
 function showNotification(title, body) {
-  if (window.pywebview && window.pywebview.api && typeof window.pywebview.api.showNotification === 'function') {
-    window.pywebview.api.showNotification(title, body);
-  } else if ('Notification' in window && Notification.permission === 'granted') {
-    new Notification(title, {
-      body: body,
-      icon: 'zaw.png',
-      badge: 'zaw.png'
-    });
+  try {
+    if (window.isLocalApp && window.pywebview && window.pywebview.api && typeof window.pywebview.api.showNotification === 'function') {
+      window.pywebview.api.showNotification(title, body);
+    } else if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(title, {
+        body: body,
+        icon: 'zaw.png',
+        badge: 'zaw.png'
+      });
+    }
+  } catch (e) {
+    console.log('通知失败:', e);
   }
 }
 
