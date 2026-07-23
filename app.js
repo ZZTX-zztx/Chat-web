@@ -454,6 +454,7 @@ authForm.addEventListener('submit', async (e)=>{
       closeLogin();
       updateAuthStatus();
       await loadMessages();
+      startMessageRefresh();
     } else {
       authError.textContent = data.error || (isLoginMode ? '登录失败' : '注册失败');
     }
