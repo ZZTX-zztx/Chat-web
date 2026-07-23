@@ -27,6 +27,22 @@ let isLoginMode = true;
 
 const API_BASE = API_URL.replace(/\/api\/messages$/, '');
 
+function requestNotificationPermission() {
+  if ('Notification' in window && Notification.permission !== 'granted') {
+    Notification.requestPermission();
+  }
+}
+
+function showNotification(title, body) {
+  if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification(title, {
+      body: body,
+      icon: 'zaw.png',
+      badge: 'zaw.png'
+    });
+  }
+}
+
 function appendMessage(text, cls='bot'){
   const container = document.createElement('div');
   const isUser = cls === 'user';
@@ -131,6 +147,8 @@ async function recallMessage(messageId){
   }
 }
 
+let lastMessageCount = 0;
+
 async function loadMessages(){
   try{
     const headers = {'Content-Type':'application/json'};
@@ -148,12 +166,24 @@ async function loadMessages(){
     if(!resp.ok) throw new Error('无法拉取消息');
     const data = await resp.json();
     if(data.ok && Array.isArray(data.messages)){
+      const newMessageCount = data.messages.length;
+      const hasNewMessages = newMessageCount > lastMessageCount && lastMessageCount > 0;
+      
       clearMessages();
       if(data.messages.length === 0){
         appendMessage('当前没有云端消息。请输入消息并发送。', 'bot');
       } else {
         data.messages.forEach(renderMessage);
+        
+        if(hasNewMessages && document.hidden){
+          const latestMessage = data.messages[data.messages.length - 1];
+          const sender = latestMessage.sender || '系统';
+          const content = latestMessage.content || '[消息]';
+          showNotification(`${sender} 发来消息`, content);
+        }
       }
+      
+      lastMessageCount = newMessageCount;
     } else {
       clearMessages();
       appendMessage('消息同步失败，请稍后重试。', 'bot');
@@ -431,6 +461,9 @@ authForm.addEventListener('submit', async (e)=>{
     authError.textContent = '网络错误：' + err.message 
   }
 });
+
+// Request notification permission on load
+requestNotificationPermission();
 
 // show login modal when no token
 updateAuthStatus();
