@@ -175,7 +175,7 @@ async function loadMessages(){
       } else {
         data.messages.forEach(renderMessage);
         
-        if(hasNewMessages && document.hidden){
+        if(hasNewMessages){
           const latestMessage = data.messages[data.messages.length - 1];
           const sender = latestMessage.sender || '系统';
           const content = latestMessage.content || '[消息]';
