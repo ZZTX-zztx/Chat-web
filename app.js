@@ -34,7 +34,9 @@ function requestNotificationPermission() {
 }
 
 function showNotification(title, body) {
-  if ('Notification' in window && Notification.permission === 'granted') {
+  if (window.pywebview && window.pywebview.api && typeof window.pywebview.api.showNotification === 'function') {
+    window.pywebview.api.showNotification(title, body);
+  } else if ('Notification' in window && Notification.permission === 'granted') {
     new Notification(title, {
       body: body,
       icon: 'zaw.png',
