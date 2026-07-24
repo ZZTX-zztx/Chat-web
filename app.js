@@ -23,6 +23,13 @@ const authModalDesc = document.getElementById('authModalDesc');
 const authSubmit = document.getElementById('authSubmit');
 const authSwitch = document.getElementById('authSwitch');
 
+const btnAddMenu = document.getElementById('btnAddMenu');
+const addMenuDropdown = document.getElementById('addMenuDropdown');
+const sendImageBtn = document.getElementById('sendImageBtn');
+const sendLocationBtn = document.getElementById('sendLocationBtn');
+const sendFileBtn = document.getElementById('sendFileBtn');
+const fileInput = document.getElementById('fileInput');
+
 let isLoginMode = true;
 
 const API_BASE = API_URL.replace(/\/api\/messages$/, '');
@@ -501,3 +508,183 @@ if(!getToken()) {
   loadMessages();
   startMessageRefresh();
 }
+
+// Add Menu Functions
+function toggleAddMenu() {
+  addMenuDropdown.classList.toggle('show');
+}
+
+function hideAddMenu() {
+  addMenuDropdown.classList.remove('show');
+}
+
+function sendFile(type) {
+  if (type === 'image') {
+    fileInput.accept = 'image/*';
+  } else {
+    fileInput.accept = '*/*';
+  }
+  fileInput.click();
+}
+
+async function sendLocation() {
+  const token = getToken();
+  if (!token) {
+    alert('请先登录');
+    return;
+  }
+  
+  hideAddMenu();
+  
+  if (!navigator.geolocation) {
+    appendMessage('您的浏览器不支持获取位置信息', 'bot');
+    return;
+  }
+  
+  appendMessage('正在获取位置...', 'bot');
+  
+  navigator.geolocation.getCurrentPosition(
+    async (position) => {
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+      
+      try {
+        const response = await fetch(`${API_BASE}/api/location`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ latitude: lat, longitude: lng })
+        });
+        
+        const result = await response.json();
+        
+        const lastMsg = messagesEl.querySelector('.msg.bot:last-child');
+        if (lastMsg && lastMsg.textContent.includes('正在获取位置')) {
+          lastMsg.remove();
+        }
+        
+        if (result.ok) {
+          appendMessage(`📍 我的位置: https://www.google.com/maps?q=${lat},${lng}`, 'user');
+          await loadMessages();
+        } else {
+          appendMessage('发送位置失败: ' + (result.error || '未知错误'), 'bot');
+        }
+      } catch (error) {
+        const lastMsg = messagesEl.querySelector('.msg.bot:last-child');
+        if (lastMsg && lastMsg.textContent.includes('正在获取位置')) {
+          lastMsg.remove();
+        }
+        appendMessage('发送位置失败: ' + error.message, 'bot');
+      }
+    },
+    (error) => {
+      const lastMsg = messagesEl.querySelector('.msg.bot:last-child');
+      if (lastMsg && lastMsg.textContent.includes('正在获取位置')) {
+        lastMsg.remove();
+      }
+      
+      let errorMsg = '获取位置失败';
+      switch (error.code) {
+        case error.PERMISSION_DENIED:
+          errorMsg = '位置权限被拒绝，请在浏览器设置中允许获取位置';
+          break;
+        case error.POSITION_UNAVAILABLE:
+          errorMsg = '位置信息不可用';
+          break;
+        case error.TIMEOUT:
+          errorMsg = '获取位置超时';
+          break;
+      }
+      appendMessage(errorMsg, 'bot');
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 0
+    }
+  );
+}
+
+async function handleFileSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  const token = getToken();
+  if (!token) {
+    alert('请先登录');
+    return;
+  }
+  
+  hideAddMenu();
+  
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  appendMessage(`正在发送文件: ${file.name}`, 'bot');
+  
+  try {
+    const response = await fetch(`${API_BASE}/api/upload`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
+    });
+    
+    const result = await response.json();
+    
+    const lastMsg = messagesEl.querySelector('.msg.bot:last-child');
+    if (lastMsg && lastMsg.textContent.includes('正在发送')) {
+      lastMsg.remove();
+    }
+    
+    if (result.ok && result.url) {
+      const isImage = file.type.startsWith('image/');
+      if (isImage) {
+        appendMessage(`![${file.name}](${result.url})`, 'user');
+      } else {
+        appendMessage(`📎 [${file.name}](${result.url})`, 'user');
+      }
+      await loadMessages();
+    } else {
+      appendMessage('文件发送失败: ' + (result.error || '未知错误'), 'bot');
+    }
+  } catch (error) {
+    const lastMsg = messagesEl.querySelector('.msg.bot:last-child');
+    if (lastMsg && lastMsg.textContent.includes('正在发送')) {
+      lastMsg.remove();
+    }
+    appendMessage('文件发送失败: ' + error.message, 'bot');
+  }
+  
+  fileInput.value = '';
+}
+
+// Add Menu Event Listeners
+btnAddMenu?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  toggleAddMenu();
+});
+
+sendImageBtn?.addEventListener('click', () => {
+  sendFile('image');
+});
+
+sendLocationBtn?.addEventListener('click', () => {
+  sendLocation();
+});
+
+sendFileBtn?.addEventListener('click', () => {
+  sendFile('file');
+});
+
+fileInput?.addEventListener('change', handleFileSelect);
+
+// Close menu when clicking outside
+document.addEventListener('click', (e) => {
+  if (!btnAddMenu?.contains(e.target) && !addMenuDropdown?.contains(e.target)) {
+    hideAddMenu();
+  }
+});
