@@ -74,6 +74,32 @@ function isBase64Image(content) {
   return /^data:image\/(png|jpg|jpeg|gif|webp);base64,/i.test(content);
 }
 
+function parseLocationMessage(content) {
+  if (!content.startsWith('[LOC]')) return null;
+  try {
+    const jsonStr = content.substring(5);
+    return JSON.parse(jsonStr);
+  } catch {
+    return null;
+  }
+}
+
+function parseFileMessage(content) {
+  if (!content.startsWith('[FILE]')) return null;
+  try {
+    const jsonStr = content.substring(6);
+    return JSON.parse(jsonStr);
+  } catch {
+    return null;
+  }
+}
+
+function formatFileSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
 function renderMessage(message){
   const container = document.createElement('div');
   container.dataset.messageId = message.id;
@@ -99,7 +125,27 @@ function renderMessage(message){
   } else if (isBase64Image(content)) {
     el.innerHTML = `<img src="${content}" class="message-image" alt="图片消息" />`;
   } else {
-    el.textContent = content;
+    const locData = parseLocationMessage(content);
+    if (locData && locData.lat && locData.lng) {
+      const lat = locData.lat.toFixed(6);
+      const lng = locData.lng.toFixed(6);
+      const mapUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+      el.innerHTML = `📍 我的位置: ${lat}, ${lng}<br/><a href="${mapUrl}" target="_blank" class="location-link">(点击查看地图)</a>`;
+    } else {
+      const fileData = parseFileMessage(content);
+      if (fileData && fileData.name) {
+        const isImage = fileData.mime && fileData.mime.startsWith('image/');
+        if (isImage && fileData.data) {
+          const imgSrc = `data:${fileData.mime};base64,${fileData.data}`;
+          el.innerHTML = `<img src="${imgSrc}" class="message-image" alt="${fileData.name}" />`;
+        } else {
+          const fileSize = formatFileSize(fileData.size || 0);
+          el.innerHTML = `📁 ${fileData.name} (${fileSize})<br/><button class="download-file-btn" data-filename="${fileData.name}" data-mime="${fileData.mime || 'application/octet-stream'}" data-data="${fileData.data || ''}">点击保存并打开</button>`;
+        }
+      } else {
+        el.textContent = content;
+      }
+    }
   }
   
   if (isUser && !message.deleted && message.id) {
@@ -547,29 +593,25 @@ async function sendLocation() {
     async (position) => {
       const lat = position.coords.latitude;
       const lng = position.coords.longitude;
+      const accuracy = position.coords.accuracy || 1;
       
       try {
-        const response = await fetch(`${API_BASE}/api/location`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ latitude: lat, longitude: lng })
-        });
+        const locationData = {
+          lat: lat,
+          lng: lng,
+          acc: accuracy
+        };
+        const content = `[LOC]${JSON.stringify(locationData)}`;
         
-        const result = await response.json();
+        const result = await sendToApi(content);
         
         const lastMsg = messagesEl.querySelector('.msg.bot:last-child');
         if (lastMsg && lastMsg.textContent.includes('正在获取位置')) {
           lastMsg.remove();
         }
         
-        if (result.ok) {
-          appendMessage(`📍 我的位置: https://www.google.com/maps?q=${lat},${lng}`, 'user');
-          await loadMessages();
-        } else {
-          appendMessage('发送位置失败: ' + (result.error || '未知错误'), 'bot');
+        if (result.error) {
+          appendMessage('发送位置失败: ' + result.error, 'bot');
         }
       } catch (error) {
         const lastMsg = messagesEl.querySelector('.msg.bot:last-child');
@@ -619,47 +661,49 @@ async function handleFileSelect(event) {
   
   hideAddMenu();
   
-  const formData = new FormData();
-  formData.append('file', file);
-  
   appendMessage(`正在发送文件: ${file.name}`, 'bot');
   
-  try {
-    const response = await fetch(`${API_BASE}/api/upload`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      },
-      body: formData
-    });
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    const base64Data = e.target.result.split(',')[1];
     
-    const result = await response.json();
-    
-    const lastMsg = messagesEl.querySelector('.msg.bot:last-child');
-    if (lastMsg && lastMsg.textContent.includes('正在发送')) {
-      lastMsg.remove();
-    }
-    
-    if (result.ok && result.url) {
-      const isImage = file.type.startsWith('image/');
-      if (isImage) {
-        appendMessage(`![${file.name}](${result.url})`, 'user');
-      } else {
-        appendMessage(`📎 [${file.name}](${result.url})`, 'user');
+    try {
+      const fileData = {
+        name: file.name,
+        size: file.size,
+        mime: file.type || 'application/octet-stream',
+        data: base64Data
+      };
+      const content = `[FILE]${JSON.stringify(fileData)}`;
+      
+      const result = await sendToApi(content);
+      
+      const lastMsg = messagesEl.querySelector('.msg.bot:last-child');
+      if (lastMsg && lastMsg.textContent.includes('正在发送')) {
+        lastMsg.remove();
       }
-      await loadMessages();
-    } else {
-      appendMessage('文件发送失败: ' + (result.error || '未知错误'), 'bot');
+      
+      if (result.error) {
+        appendMessage('文件发送失败: ' + result.error, 'bot');
+      }
+    } catch (error) {
+      const lastMsg = messagesEl.querySelector('.msg.bot:last-child');
+      if (lastMsg && lastMsg.textContent.includes('正在发送')) {
+        lastMsg.remove();
+      }
+      appendMessage('文件发送失败: ' + error.message, 'bot');
     }
-  } catch (error) {
-    const lastMsg = messagesEl.querySelector('.msg.bot:last-child');
-    if (lastMsg && lastMsg.textContent.includes('正在发送')) {
-      lastMsg.remove();
-    }
-    appendMessage('文件发送失败: ' + error.message, 'bot');
+    
+    fileInput.value = '';
+  };
+  
+  if (file.size > 5 * 1024 * 1024) {
+    appendMessage('文件过大，最大支持5MB', 'bot');
+    fileInput.value = '';
+    return;
   }
   
-  fileInput.value = '';
+  reader.readAsDataURL(file);
 }
 
 // Add Menu Event Listeners
@@ -687,4 +731,39 @@ document.addEventListener('click', (e) => {
   if (!btnAddMenu?.contains(e.target) && !addMenuDropdown?.contains(e.target)) {
     hideAddMenu();
   }
+  
+  // Handle file download button click
+  if (e.target.classList.contains('download-file-btn')) {
+    const btn = e.target;
+    const filename = btn.dataset.filename;
+    const mime = btn.dataset.mime;
+    const data = btn.dataset.data;
+    
+    if (filename && data) {
+      downloadFile(filename, mime, data);
+    }
+  }
 });
+
+function downloadFile(filename, mime, base64Data) {
+  try {
+    const byteString = atob(base64Data);
+    const byteArray = new Uint8Array(byteString.length);
+    for (let i = 0; i < byteString.length; i++) {
+      byteArray[i] = byteString.charCodeAt(i);
+    }
+    const blob = new Blob([byteArray], { type: mime });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('下载文件失败:', error);
+    alert('下载文件失败: ' + error.message);
+  }
+}
