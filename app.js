@@ -76,21 +76,90 @@ function isBase64Image(content) {
 
 function parseLocationMessage(content) {
   if (!content.startsWith('[LOC]')) return null;
-  try {
-    const jsonStr = content.substring(5);
-    return JSON.parse(jsonStr);
-  } catch {
-    return null;
+  const jsonStr = content.substring(5);
+  
+  let parsed = parseJsonSafely(jsonStr);
+  if (parsed && parsed.lat && parsed.lng) {
+    return parsed;
   }
+  
+  try {
+    const latMatch = jsonStr.match(/"lat":\s*([-+]?\d*\.?\d+)/);
+    const lngMatch = jsonStr.match(/"lng":\s*([-+]?\d*\.?\d+)/);
+    const accMatch = jsonStr.match(/"acc":\s*(\d+)/);
+    
+    if (latMatch && lngMatch) {
+      return {
+        lat: parseFloat(latMatch[1]),
+        lng: parseFloat(lngMatch[1]),
+        acc: accMatch ? parseInt(accMatch[1]) : 1
+      };
+    }
+  } catch (e) {
+    console.error('解析位置消息失败:', e);
+  }
+  
+  return null;
 }
 
 function parseFileMessage(content) {
   if (!content.startsWith('[FILE]')) return null;
+  const jsonStr = content.substring(6);
+  
+  let parsed = parseJsonSafely(jsonStr);
+  if (parsed && parsed.name) {
+    return parsed;
+  }
+  
   try {
-    const jsonStr = content.substring(6);
+    const nameMatch = jsonStr.match(/"name":\s*["']?([^"',]+)["']?/);
+    const sizeMatch = jsonStr.match(/"size":\s*(\d+)/);
+    const mimeMatch = jsonStr.match(/"mime":\s*["']?([^"',]+)["']?/);
+    const dataMatch = jsonStr.match(/"data":\s*["']?([^"',]+)["']?/);
+    
+    if (nameMatch) {
+      return {
+        name: nameMatch[1],
+        size: sizeMatch ? parseInt(sizeMatch[1]) : 0,
+        mime: mimeMatch ? mimeMatch[1] : 'application/octet-stream',
+        data: dataMatch ? dataMatch[1] : ''
+      };
+    }
+  } catch (e) {
+    console.error('解析文件消息失败:', e);
+  }
+  
+  return null;
+}
+
+function fixInvalidEscapes(jsonStr) {
+  let result = jsonStr;
+  result = result.replace(/\\(?![\\"])/g, '/');
+  result = result.replace(/\\\\/g, '\\');
+  return result;
+}
+
+function parseJsonSafely(jsonStr) {
+  try {
     return JSON.parse(jsonStr);
   } catch {
-    return null;
+    try {
+      const fixed = jsonStr.replace(/\\(?![\\"])/g, '/');
+      return JSON.parse(fixed);
+    } catch {
+      try {
+        const lines = jsonStr.split('\\n');
+        let fixed = '';
+        for (let i = 0; i < lines.length; i++) {
+          if (i > 0) fixed += '\n';
+          fixed += lines[i];
+        }
+        return JSON.parse(fixed);
+      } catch {
+        console.error('无法解析JSON:', jsonStr);
+        return null;
+      }
+    }
   }
 }
 
