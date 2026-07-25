@@ -814,23 +814,32 @@ document.addEventListener('click', (e) => {
   }
 });
 
-function downloadFile(filename, mime, base64Data) {
+async function downloadFile(filename, mime, base64Data) {
   try {
-    const byteString = atob(base64Data);
-    const byteArray = new Uint8Array(byteString.length);
-    for (let i = 0; i < byteString.length; i++) {
-      byteArray[i] = byteString.charCodeAt(i);
+    if (window.isLocalApp && window.pywebview && window.pywebview.api) {
+      const result = await window.pywebview.api.downloadFile(filename, mime, base64Data);
+      if (result.success) {
+        console.log('文件已保存:', result.path);
+      } else {
+        alert('下载失败: ' + result.error);
+      }
+    } else {
+      const byteString = atob(base64Data);
+      const byteArray = new Uint8Array(byteString.length);
+      for (let i = 0; i < byteString.length; i++) {
+        byteArray[i] = byteString.charCodeAt(i);
+      }
+      const blob = new Blob([byteArray], { type: mime });
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
     }
-    const blob = new Blob([byteArray], { type: mime });
-    const url = URL.createObjectURL(blob);
-    
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
   } catch (error) {
     console.error('下载文件失败:', error);
     alert('下载文件失败: ' + error.message);
