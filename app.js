@@ -665,7 +665,9 @@ if (avatarInput) {
 
 if (loginModal) {
   loginModal.addEventListener('click', (e) => {
-    if (e.target === loginModal) closeLogin();
+    if (e.target === loginModal) {
+      return;
+    }
   });
 }
 
