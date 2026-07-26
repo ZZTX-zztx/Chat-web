@@ -35,8 +35,9 @@ body{font-family:Inter,system-ui,Segoe UI,Arial;background:#f7f8fb;color:#0f172a
 .chat-header{font-weight:700;margin-bottom:8px}
 .chat{padding:12px;position:relative}
 .messages{height:48vh;overflow:auto;padding:8px;border-radius:8px;background:linear-gradient(180deg,#fbfbff,#ffffff);border:1px solid #eef2ff}
-.message-container{margin:12px 0;display:flex;gap:8px}
-.message-container.user{align-items:flex-end;flex-direction:row-reverse}
+.message-container{margin:12px 0;display:flex;gap:8px;align-items:flex-end}
+.message-container.user{flex-direction:row-reverse}
+.message-container.user .message-content-wrapper{align-items:flex-end}
 .message-content-wrapper{display:flex;flex-direction:column}
 .message-sender{font-size:12px;color:var(--muted);margin-bottom:4px;padding:0 4px}
 .message-avatar{width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid #eef2ff}
