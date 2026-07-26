@@ -22,6 +22,10 @@ const authModalTitle = document.getElementById('authModalTitle');
 const authModalDesc = document.getElementById('authModalDesc');
 const authSubmit = document.getElementById('authSubmit');
 const authSwitch = document.getElementById('authSwitch');
+const avatarInput = document.getElementById('avatarInput');
+const avatarPreview = document.getElementById('avatarPreview');
+
+let selectedAvatarBase64 = null;
 
 const btnAddMenu = document.getElementById('btnAddMenu');
 const addMenuDropdown = document.getElementById('addMenuDropdown');
@@ -601,6 +605,24 @@ function toggleAuthMode(){
   }
 }
 
+function handleAvatarSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const result = e.target.result;
+    avatarPreview.style.backgroundImage = `url(${result})`;
+    selectedAvatarBase64 = result.split(',')[1];
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearAvatar() {
+  selectedAvatarBase64 = null;
+  avatarPreview.style.backgroundImage = 'url("zaw.png")';
+}
+
 if (openLoginBtn) {
   openLoginBtn.addEventListener('click', () => openLogin());
 }
@@ -611,6 +633,10 @@ if (authCancel) {
 
 if (authSwitch) {
   authSwitch.addEventListener('click', toggleAuthMode);
+}
+
+if (avatarInput) {
+  avatarInput.addEventListener('change', handleAvatarSelect);
 }
 
 if (loginModal) {
@@ -641,14 +667,16 @@ authForm.addEventListener('submit', async (e)=>{
   
   try{
     const endpoint = isLoginMode ? '/api/login' : '/api/register';
+    const bodyData = isLoginMode ? {username, password} : {username, password, avatar: selectedAvatarBase64};
     const resp = await fetch(`${API_BASE}${endpoint}`, {
       method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({username, password})
+      body: JSON.stringify(bodyData)
     });
     const data = await resp.json();
     if(resp.ok && data.ok && data.token){
       setToken(data.token, username);
       closeLogin();
+      clearAvatar();
       updateAuthStatus();
       await loadMessages();
       startMessageRefresh();
