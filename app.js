@@ -28,7 +28,14 @@ const addMenuDropdown = document.getElementById('addMenuDropdown');
 const sendImageBtn = document.getElementById('sendImageBtn');
 const sendLocationBtn = document.getElementById('sendLocationBtn');
 const sendFileBtn = document.getElementById('sendFileBtn');
+const createGroupBtn = document.getElementById('createGroupBtn');
 const fileInput = document.getElementById('fileInput');
+
+const createGroupModal = document.getElementById('createGroupModal');
+const createGroupForm = document.getElementById('createGroupForm');
+const groupNameInput = document.getElementById('groupNameInput');
+const cancelGroupBtn = document.getElementById('cancelGroupBtn');
+const groupError = document.getElementById('groupError');
 
 // Voice Message Elements
 const btnVoice = document.getElementById('btnVoice');
@@ -1125,6 +1132,89 @@ btnCancelRecording?.addEventListener('click', cancelVoiceRecording);
 
 btnLockRecording?.addEventListener('click', () => {
   toggleLockRecording();
+});
+
+// Create Group Functions
+function openCreateGroupModal() {
+  groupError.textContent = '';
+  groupNameInput.value = '';
+  createGroupModal.classList.add('show');
+  createGroupModal.setAttribute('aria-hidden', 'false');
+}
+
+function closeCreateGroupModal() {
+  createGroupModal.classList.remove('show');
+  createGroupModal.setAttribute('aria-hidden', 'true');
+}
+
+async function createGroup(groupName) {
+  const token = getToken();
+  if (!token) {
+    alert('请先登录');
+    return;
+  }
+
+  try {
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + token
+    };
+
+    const resp = await fetch(`${API_BASE}/api/groups`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        name: groupName,
+        memberIds: []
+      })
+    });
+
+    if (resp.status === 401) {
+      setToken(null);
+      openLogin();
+      return;
+    }
+
+    const data = await resp.json();
+    
+    if (resp.ok && data.success) {
+      appendMessage(`群聊「${groupName}」创建成功！`, 'bot');
+      closeCreateGroupModal();
+      hideAddMenu();
+    } else {
+      groupError.textContent = data.message || '创建群聊失败';
+    }
+  } catch (error) {
+    console.error('创建群聊失败:', error);
+    groupError.textContent = '创建群聊失败: ' + error.message;
+  }
+}
+
+// Create Group Event Listeners
+createGroupBtn?.addEventListener('click', () => {
+  openCreateGroupModal();
+  hideAddMenu();
+});
+
+cancelGroupBtn?.addEventListener('click', closeCreateGroupModal);
+
+createGroupForm?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  groupError.textContent = '';
+  
+  const groupName = groupNameInput.value.trim();
+  if (!groupName) {
+    groupError.textContent = '请输入群名称';
+    return;
+  }
+
+  await createGroup(groupName);
+});
+
+createGroupModal?.addEventListener('click', (e) => {
+  if (e.target === createGroupModal) {
+    closeCreateGroupModal();
+  }
 });
 
 // Handle voice play button click

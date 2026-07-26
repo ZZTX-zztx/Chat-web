@@ -66,7 +66,33 @@
           <span class="add-menu-icon">📁</span>
           <span>发送文件</span>
         </button>
+        <button id="createGroupBtn" class="add-menu-item">
+          <span class="add-menu-icon">👥</span>
+          <span>创建群聊</span>
+        </button>
         <input id="fileInput" type="file" accept="image/*,application/*" style="display:none" />
+      </div>
+
+      <!-- Create Group Modal -->
+      <div id="createGroupModal" class="modal-overlay" aria-hidden="true">
+        <div class="modal">
+          <div class="modal-header">
+            <div>
+              <h3>创建群聊</h3>
+              <p>请输入群名称</p>
+            </div>
+          </div>
+          <form id="createGroupForm" class="loginForm">
+            <label>群名称
+              <input id="groupNameInput" type="text" placeholder="输入群名称" />
+            </label>
+            <div class="modal-actions">
+              <button type="submit" class="btn primary">创建</button>
+              <button type="button" id="cancelGroupBtn" class="btn ghost">取消</button>
+            </div>
+            <div id="groupError" class="login-error" aria-live="polite"></div>
+          </form>
+        </div>
       </div>
     </section>
     <section class="download-after">
