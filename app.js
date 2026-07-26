@@ -243,10 +243,25 @@ function renderMessage(message){
   const isUser = sender === username || (!username && sender === '匿名用户');
   container.className = 'message-container' + (isUser ? ' user' : '');
   
+  const avatarEl = document.createElement('img');
+  avatarEl.className = 'message-avatar';
+  const avatar = message.avatar;
+  if (avatar && avatar.startsWith('data:image/')) {
+    avatarEl.src = avatar;
+  } else if (avatar) {
+    avatarEl.src = 'data:image/png;base64,' + avatar;
+  } else {
+    avatarEl.src = 'zaw.png';
+  }
+  container.appendChild(avatarEl);
+  
+  const contentWrapper = document.createElement('div');
+  contentWrapper.className = 'message-content-wrapper';
+  
   const senderEl = document.createElement('div');
   senderEl.className = 'message-sender';
   senderEl.textContent = sender;
-  container.appendChild(senderEl);
+  contentWrapper.appendChild(senderEl);
   
   const el = document.createElement('div');
   const cls = isUser ? 'msg user' : 'msg bot';
@@ -310,7 +325,8 @@ function renderMessage(message){
     }
   }
   
-  container.appendChild(el);
+  contentWrapper.appendChild(el);
+  container.appendChild(contentWrapper);
   messagesEl.appendChild(container);
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
@@ -399,6 +415,10 @@ async function loadMessages(){
   }
 }
 
+function getAvatar(){
+  return localStorage.getItem('auth_avatar');
+}
+
 async function sendToApi(message){
   try{
     const headers = {'Content-Type':'application/json'};
@@ -406,11 +426,12 @@ async function sendToApi(message){
     if(token) headers['Authorization'] = 'Bearer ' + token;
 
     const sender = getUsername();
+    const avatar = getAvatar();
     
     const resp = await fetch(API_URL, {
       method: 'POST',
       headers,
-      body: JSON.stringify({content: message, sender: sender || '匿名用户'})
+      body: JSON.stringify({content: message, sender: sender || '匿名用户', avatar: avatar})
     });
 
     if(resp.status === 401){
@@ -525,13 +546,15 @@ function getUsername(){
   return localStorage.getItem('auth_username');
 }
 
-function setToken(token, username){
+function setToken(token, username, avatar){
   if(token){
     localStorage.setItem('auth_token', token);
     if(username) localStorage.setItem('auth_username', username);
+    if(avatar) localStorage.setItem('auth_avatar', avatar);
   } else {
     localStorage.removeItem('auth_token');
     localStorage.removeItem('auth_username');
+    localStorage.removeItem('auth_avatar');
   }
   updateAuthStatus();
 }
@@ -551,6 +574,7 @@ function updateAuthStatus(){
 
 function logout(){
   setToken(null);
+  localStorage.removeItem('auth_avatar');
   clearMessages();
   appendMessage('已退出登录，请重新登录。', 'bot');
   openLogin();
@@ -674,7 +698,7 @@ authForm.addEventListener('submit', async (e)=>{
     });
     const data = await resp.json();
     if(resp.ok && data.ok && data.token){
-      setToken(data.token, username);
+      setToken(data.token, username, data.avatar);
       closeLogin();
       clearAvatar();
       updateAuthStatus();
