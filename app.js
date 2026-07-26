@@ -30,7 +30,25 @@ const sendLocationBtn = document.getElementById('sendLocationBtn');
 const sendFileBtn = document.getElementById('sendFileBtn');
 const fileInput = document.getElementById('fileInput');
 
+// Voice Message Elements
+const btnVoice = document.getElementById('btnVoice');
+const btnLockVoice = document.getElementById('btnLockVoice');
+const btnSendVoice = document.getElementById('btnSendVoice');
+const voiceRecordingOverlay = document.getElementById('voiceRecordingOverlay');
+const voiceRecordingTime = document.getElementById('voiceRecordingTime');
+const btnCancelRecording = document.getElementById('btnCancelRecording');
+const btnLockRecording = document.getElementById('btnLockRecording');
+
 let isLoginMode = true;
+
+// Voice Recording Variables
+let mediaRecorder = null;
+let audioChunks = [];
+let recordingStartTime = 0;
+let recordingTimer = null;
+let audioContext = null;
+let audioBuffer = null;
+let isRecordingLocked = false;
 
 const API_BASE = API_URL.replace(/\/api\/messages$/, '');
 
@@ -132,6 +150,34 @@ function parseFileMessage(content) {
   return null;
 }
 
+function parseVoiceMessage(content) {
+  if (!content.startsWith('[VOICE]')) return null;
+  const jsonStr = content.substring(7);
+  
+  let parsed = parseJsonSafely(jsonStr);
+  if (parsed && parsed.data) {
+    return parsed;
+  }
+  
+  try {
+    const dataMatch = jsonStr.match(/"data":\s*["']?([^"',]+)["']?/);
+    const durationMatch = jsonStr.match(/"duration":\s*(\d+)/);
+    const sampleRateMatch = jsonStr.match(/"sampleRate":\s*(\d+)/);
+    
+    if (dataMatch) {
+      return {
+        data: dataMatch[1],
+        duration: durationMatch ? parseInt(durationMatch[1]) : 0,
+        sampleRate: sampleRateMatch ? parseInt(sampleRateMatch[1]) : 16000
+      };
+    }
+  } catch (e) {
+    console.error('解析语音消息失败:', e);
+  }
+  
+  return null;
+}
+
 function fixInvalidEscapes(jsonStr) {
   let result = jsonStr;
   result = result.replace(/\\(?![\\"])/g, '/');
@@ -169,6 +215,15 @@ function formatFileSize(bytes) {
   return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 }
 
+function formatDuration(seconds) {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  if (mins > 0) {
+    return `${mins}'${secs.toString().padStart(2, '0')}"`;
+  }
+  return `${secs}"`;
+}
+
 function renderMessage(message){
   const container = document.createElement('div');
   container.dataset.messageId = message.id;
@@ -194,25 +249,32 @@ function renderMessage(message){
   } else if (isBase64Image(content)) {
     el.innerHTML = `<img src="${content}" class="message-image" alt="图片消息" />`;
   } else {
-    const locData = parseLocationMessage(content);
-    if (locData && locData.lat && locData.lng) {
-      const lat = locData.lat.toFixed(6);
-      const lng = locData.lng.toFixed(6);
-      const mapUrl = `https://www.google.com/maps?q=${lat},${lng}`;
-      el.innerHTML = `📍 我的位置: ${lat}, ${lng}<br/><a href="${mapUrl}" target="_blank" class="location-link">(点击查看地图)</a>`;
+    const voiceData = parseVoiceMessage(content);
+    if (voiceData && voiceData.data) {
+      const duration = voiceData.duration || 0;
+      const durationStr = formatDuration(duration);
+      el.innerHTML = `<div class="message-voice"><button class="voice-play-btn" data-voice="${voiceData.data}" data-samplerate="${voiceData.sampleRate || 16000}">▶</button><span class="voice-duration">🎤 ${durationStr}</span></div>`;
     } else {
-      const fileData = parseFileMessage(content);
-      if (fileData && fileData.name) {
-        const isImage = fileData.mime && fileData.mime.startsWith('image/');
-        if (isImage && fileData.data) {
-          const imgSrc = `data:${fileData.mime};base64,${fileData.data}`;
-          el.innerHTML = `<img src="${imgSrc}" class="message-image" alt="${fileData.name}" />`;
-        } else {
-          const fileSize = formatFileSize(fileData.size || 0);
-          el.innerHTML = `📁 ${fileData.name} (${fileSize})<br/><button class="download-file-btn" data-filename="${fileData.name}" data-mime="${fileData.mime || 'application/octet-stream'}" data-data="${fileData.data || ''}">点击保存并打开</button>`;
-        }
+      const locData = parseLocationMessage(content);
+      if (locData && locData.lat && locData.lng) {
+        const lat = locData.lat.toFixed(6);
+        const lng = locData.lng.toFixed(6);
+        const mapUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+        el.innerHTML = `📍 我的位置: ${lat}, ${lng}<br/><a href="${mapUrl}" target="_blank" class="location-link">(点击查看地图)</a>`;
       } else {
-        el.textContent = content;
+        const fileData = parseFileMessage(content);
+        if (fileData && fileData.name) {
+          const isImage = fileData.mime && fileData.mime.startsWith('image/');
+          if (isImage && fileData.data) {
+            const imgSrc = `data:${fileData.mime};base64,${fileData.data}`;
+            el.innerHTML = `<img src="${imgSrc}" class="message-image" alt="${fileData.name}" />`;
+          } else {
+            const fileSize = formatFileSize(fileData.size || 0);
+            el.innerHTML = `📁 ${fileData.name} (${fileSize})<br/><button class="download-file-btn" data-filename="${fileData.name}" data-mime="${fileData.mime || 'application/octet-stream'}" data-data="${fileData.data || ''}">点击保存并打开</button>`;
+          }
+        } else {
+          el.textContent = content;
+        }
       }
     }
   }
@@ -845,3 +907,244 @@ async function downloadFile(filename, mime, base64Data) {
     alert('下载文件失败: ' + error.message);
   }
 }
+
+// Voice Message Functions
+async function startVoiceRecording() {
+  const token = getToken();
+  if (!token) {
+    alert('请先登录');
+    return;
+  }
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks = [];
+    recordingStartTime = Date.now();
+
+    mediaRecorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        audioChunks.push(event.data);
+      }
+    };
+
+    mediaRecorder.onstop = async () => {
+      const duration = Math.floor((Date.now() - recordingStartTime) / 1000);
+      
+      if (duration < 1) {
+        appendMessage('录音时间过短，请重试', 'bot');
+        resetVoiceUI();
+        return;
+      }
+
+      const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+      const reader = new FileReader();
+      
+      reader.onload = async (e) => {
+        const base64Data = e.target.result.split(',')[1];
+        
+        const voiceData = {
+          data: base64Data,
+          duration: duration,
+          sampleRate: 16000
+        };
+        const content = `[VOICE]${JSON.stringify(voiceData)}`;
+        
+        appendMessage('正在发送语音...', 'bot');
+        const result = await sendToApi(content);
+        
+        const lastMsg = messagesEl.querySelector('.msg.bot:last-child');
+        if (lastMsg && lastMsg.textContent.includes('正在发送语音')) {
+          lastMsg.remove();
+        }
+        
+        if (result.error) {
+          appendMessage('语音发送失败: ' + result.error, 'bot');
+        }
+      };
+      
+      reader.readAsDataURL(audioBlob);
+    };
+
+    mediaRecorder.start(100);
+    btnVoice.classList.add('recording');
+    voiceRecordingOverlay.style.display = 'flex';
+    updateRecordingTimer();
+    
+  } catch (error) {
+    console.error('录音失败:', error);
+    if (error.name === 'NotAllowedError') {
+      alert('麦克风权限被拒绝，请在浏览器设置中允许访问麦克风');
+    } else {
+      alert('录音失败: ' + error.message);
+    }
+  }
+}
+
+function toggleLockRecording() {
+  isRecordingLocked = !isRecordingLocked;
+  
+  if (isRecordingLocked) {
+    btnLockVoice.classList.add('locked');
+    btnVoice.classList.add('locked');
+    btnVoice.classList.remove('recording');
+    btnVoice.textContent = '🔓';
+    btnSendVoice.style.display = 'block';
+    voiceRecordingOverlay.style.display = 'none';
+  } else {
+    resetVoiceUI();
+  }
+}
+
+function resetVoiceUI() {
+  isRecordingLocked = false;
+  btnLockVoice.classList.remove('locked');
+  btnVoice.classList.remove('locked', 'recording');
+  btnVoice.textContent = '🎤';
+  btnSendVoice.style.display = 'none';
+  voiceRecordingOverlay.style.display = 'none';
+  
+  if (recordingTimer) {
+    clearInterval(recordingTimer);
+    recordingTimer = null;
+  }
+}
+
+function updateRecordingTimer() {
+  recordingTimer = setInterval(() => {
+    const elapsed = Date.now() - recordingStartTime;
+    const seconds = Math.floor(elapsed / 1000);
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    voiceRecordingTime.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }, 1000);
+}
+
+function stopVoiceRecording(send = true) {
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    if (send) {
+      mediaRecorder.stop();
+    } else {
+      mediaRecorder.stream.getTracks().forEach(track => track.stop());
+      mediaRecorder = null;
+      audioChunks = [];
+    }
+  }
+  
+  if (recordingTimer) {
+    clearInterval(recordingTimer);
+    recordingTimer = null;
+  }
+  
+  if (!isRecordingLocked) {
+    btnVoice.classList.remove('recording');
+    voiceRecordingOverlay.style.display = 'none';
+  }
+}
+
+function cancelVoiceRecording() {
+  stopVoiceRecording(false);
+  resetVoiceUI();
+}
+
+function sendVoiceMessage() {
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    mediaRecorder.stop();
+  }
+  resetVoiceUI();
+}
+
+async function playVoiceMessage(base64Data, sampleRate) {
+  try {
+    const byteString = atob(base64Data);
+    const byteArray = new Uint8Array(byteString.length);
+    for (let i = 0; i < byteString.length; i++) {
+      byteArray[i] = byteString.charCodeAt(i);
+    }
+    
+    if (!audioContext) {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    
+    const audioBuffer = await audioContext.decodeAudioData(byteArray.buffer);
+    const source = audioContext.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(audioContext.destination);
+    source.start(0);
+  } catch (error) {
+    console.error('播放语音失败:', error);
+    alert('播放语音失败: ' + error.message);
+  }
+}
+
+// Voice Message Event Listeners
+btnVoice?.addEventListener('mousedown', (e) => {
+  e.preventDefault();
+  if (!isRecordingLocked) {
+    startVoiceRecording();
+  }
+});
+
+btnVoice?.addEventListener('mouseup', () => {
+  if (!isRecordingLocked) {
+    stopVoiceRecording();
+  }
+});
+
+btnVoice?.addEventListener('mouseleave', () => {
+  if (!isRecordingLocked) {
+    stopVoiceRecording();
+  }
+});
+
+btnVoice?.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  if (!isRecordingLocked) {
+    startVoiceRecording();
+  }
+}, { passive: false });
+
+btnVoice?.addEventListener('touchend', () => {
+  if (!isRecordingLocked) {
+    stopVoiceRecording();
+  }
+});
+
+btnLockVoice?.addEventListener('click', () => {
+  if (!isRecordingLocked && !mediaRecorder) {
+    startVoiceRecording();
+    toggleLockRecording();
+  } else if (isRecordingLocked) {
+    toggleLockRecording();
+  }
+});
+
+btnSendVoice?.addEventListener('click', sendVoiceMessage);
+
+btnCancelRecording?.addEventListener('click', cancelVoiceRecording);
+
+btnLockRecording?.addEventListener('click', () => {
+  toggleLockRecording();
+});
+
+// Handle voice play button click
+document.addEventListener('click', (e) => {
+  if (e.target.classList.contains('voice-play-btn')) {
+    const btn = e.target;
+    const voiceData = btn.dataset.voice;
+    const sampleRate = parseInt(btn.dataset.samplerate) || 16000;
+    
+    if (voiceData) {
+      btn.classList.add('playing');
+      btn.textContent = '⏸';
+      
+      playVoiceMessage(voiceData, sampleRate).then(() => {
+        btn.classList.remove('playing');
+        btn.textContent = '▶';
+      }).catch(() => {
+        btn.classList.remove('playing');
+        btn.textContent = '▶';
+      });
+    }
+  }
+});

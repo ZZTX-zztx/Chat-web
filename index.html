@@ -31,8 +31,26 @@
       <form id="inputForm" class="inputForm">
         <button type="button" id="btnAddMenu" class="btn add-menu-btn">+</button>
         <input id="input" type="text" placeholder="输入消息并回车发送" autocomplete="off" />
+        <div id="voiceControl" class="voice-control">
+          <button type="button" id="btnLockVoice" class="btn voice-lock-btn" title="锁定录音">🔒</button>
+          <button type="button" id="btnVoice" class="btn voice-btn" title="按住说话">🎤</button>
+          <button type="button" id="btnSendVoice" class="btn voice-send-btn" style="display:none">发送</button>
+        </div>
         <button type="submit" class="btn primary">发送</button>
       </form>
+      
+      <!-- Voice Recording UI -->
+      <div id="voiceRecordingOverlay" class="voice-recording-overlay" style="display:none">
+        <div class="voice-recording-container">
+          <div class="voice-recording-wave"></div>
+          <div class="voice-recording-time">00:00</div>
+          <div class="voice-recording-hint">上滑取消</div>
+          <div class="voice-recording-actions">
+            <button type="button" id="btnLockRecording" class="btn voice-action-btn">🔒 锁定</button>
+            <button type="button" id="btnCancelRecording" class="btn voice-action-btn cancel">✕ 取消</button>
+          </div>
+        </div>
+      </div>
       
       <!-- Add Menu Dropdown -->
       <div id="addMenuDropdown" class="add-menu-dropdown">
