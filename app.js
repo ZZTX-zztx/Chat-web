@@ -38,8 +38,19 @@ const fileInput = document.getElementById('fileInput');
 const createGroupModal = document.getElementById('createGroupModal');
 const createGroupForm = document.getElementById('createGroupForm');
 const groupNameInput = document.getElementById('groupNameInput');
+const groupMatchCodeInput = document.getElementById('groupMatchCodeInput');
 const cancelGroupBtn = document.getElementById('cancelGroupBtn');
 const groupError = document.getElementById('groupError');
+
+// Settings Elements
+const openSettingsBtn = document.getElementById('openSettingsBtn');
+const settingsModal = document.getElementById('settingsModal');
+const settingsForm = document.getElementById('settingsForm');
+const settingsAvatarPreview = document.getElementById('settingsAvatarPreview');
+const settingsAvatarInput = document.getElementById('settingsAvatarInput');
+const settingsUsername = document.getElementById('settingsUsername');
+const settingsRefreshInterval = document.getElementById('settingsRefreshInterval');
+const cancelSettingsBtn = document.getElementById('cancelSettingsBtn');
 
 // Voice Message Elements
 const btnVoice = document.getElementById('btnVoice');
@@ -443,12 +454,38 @@ async function sendToApi(message){
     if(!resp.ok) throw new Error('Network response not ok');
     const data = await resp.json();
     if(data.ok){
+      lastFetchTime = Date.now();
       await loadMessages();
+      notifyGroupMembers(sender || '匿名用户', message);
       return { success: true };
     }
     return { error: data.error || '发送失败' };
   }catch(e){
     return { error: '请求失败：' + e.message };
+  }
+}
+
+async function notifyGroupMembers(sender, content) {
+  try {
+    const token = getToken();
+    if (!token) return;
+
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + token
+    };
+
+    await fetch(`${API_BASE}/api/notify`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        sender: sender,
+        content: content.substring(0, 50) + (content.length > 50 ? '...' : ''),
+        timestamp: Date.now()
+      })
+    });
+  } catch (e) {
+    console.log('通知群成员失败:', e.message);
   }
 }
 
@@ -715,6 +752,8 @@ authForm.addEventListener('submit', async (e)=>{
 });
 
 let messageRefreshInterval = null;
+let lastFetchTime = 0;
+let MIN_FETCH_INTERVAL = 3000;
 
 function startMessageRefresh() {
   if (messageRefreshInterval) {
@@ -722,9 +761,13 @@ function startMessageRefresh() {
   }
   messageRefreshInterval = setInterval(() => {
     if (getToken()) {
-      loadMessages();
+      const now = Date.now();
+      if (now - lastFetchTime >= MIN_FETCH_INTERVAL) {
+        lastFetchTime = now;
+        loadMessages();
+      }
     }
-  }, 1000);
+  }, 3000);
 }
 
 function stopMessageRefresh() {
@@ -737,8 +780,17 @@ function stopMessageRefresh() {
 // Request notification permission on load
 requestNotificationPermission();
 
+// Load settings
+function loadSettings() {
+  const savedInterval = localStorage.getItem('settings_refresh_interval');
+  if (savedInterval) {
+    MIN_FETCH_INTERVAL = parseInt(savedInterval) * 1000;
+  }
+}
+
 // show login modal when no token
 updateAuthStatus();
+loadSettings();
 
 if(!getToken()) {
   setTimeout(() => openLogin(), 120);
@@ -1192,6 +1244,7 @@ btnLockRecording?.addEventListener('click', () => {
 function openCreateGroupModal() {
   groupError.textContent = '';
   groupNameInput.value = '';
+  groupMatchCodeInput.value = '';
   createGroupModal.classList.add('show');
   createGroupModal.setAttribute('aria-hidden', 'false');
 }
@@ -1201,7 +1254,7 @@ function closeCreateGroupModal() {
   createGroupModal.setAttribute('aria-hidden', 'true');
 }
 
-async function createGroup(groupName) {
+async function createGroup(groupName, matchCode) {
   const token = getToken();
   if (!token) {
     alert('请先登录');
@@ -1219,6 +1272,7 @@ async function createGroup(groupName) {
       headers,
       body: JSON.stringify({
         name: groupName,
+        matchCode: matchCode,
         memberIds: []
       })
     });
@@ -1232,7 +1286,7 @@ async function createGroup(groupName) {
     const data = await resp.json();
     
     if (resp.ok && data.success) {
-      appendMessage(`群聊「${groupName}」创建成功！`, 'bot');
+      appendMessage(`群聊「${groupName}」创建成功！匹配码: ${matchCode}`, 'bot');
       closeCreateGroupModal();
       hideAddMenu();
     } else {
@@ -1262,8 +1316,22 @@ createGroupForm?.addEventListener('submit', async (e) => {
     return;
   }
 
-  await createGroup(groupName);
+  let matchCode = groupMatchCodeInput.value.trim();
+  if (!matchCode) {
+    matchCode = generateMatchCode();
+  }
+  
+  await createGroup(groupName, matchCode);
 });
+
+function generateMatchCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
 
 createGroupModal?.addEventListener('click', (e) => {
   if (e.target === createGroupModal) {
@@ -1291,4 +1359,85 @@ document.addEventListener('click', (e) => {
       });
     }
   }
+});
+
+// Settings Functions
+function openSettingsModal() {
+  const username = getUsername();
+  if (!username) {
+    alert('请先登录');
+    return;
+  }
+  
+  settingsUsername.value = username;
+  
+  const avatar = getAvatar();
+  if (avatar && avatar.startsWith('data:image/')) {
+    settingsAvatarPreview.style.backgroundImage = `url('${avatar}')`;
+  } else if (avatar) {
+    settingsAvatarPreview.style.backgroundImage = `url('data:image/png;base64,${avatar}')`;
+  } else {
+    settingsAvatarPreview.style.backgroundImage = `url('zaw.png')`;
+  }
+  
+  const refreshInterval = localStorage.getItem('settings_refresh_interval') || 3;
+  settingsRefreshInterval.value = refreshInterval;
+  
+  settingsModal.classList.add('show');
+  settingsModal.setAttribute('aria-hidden', 'false');
+}
+
+function closeSettingsModal() {
+  settingsModal.classList.remove('show');
+  settingsModal.setAttribute('aria-hidden', 'true');
+}
+
+function updateSettingsAvatar(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const base64 = e.target.result;
+    settingsAvatarPreview.style.backgroundImage = `url('${base64}')`;
+    localStorage.setItem('auth_avatar', base64.split(',')[1]);
+    avatarPreview.style.backgroundImage = `url('${base64}')`;
+  };
+  reader.readAsDataURL(file);
+}
+
+function saveSettings(refreshInterval) {
+  localStorage.setItem('settings_refresh_interval', refreshInterval);
+  MIN_FETCH_INTERVAL = refreshInterval * 1000;
+  stopMessageRefresh();
+  startMessageRefresh();
+}
+
+// Settings Event Listeners
+openSettingsBtn?.addEventListener('click', () => {
+  openSettingsModal();
+});
+
+cancelSettingsBtn?.addEventListener('click', closeSettingsModal);
+
+settingsModal?.addEventListener('click', (e) => {
+  if (e.target === settingsModal) {
+    closeSettingsModal();
+  }
+});
+
+settingsAvatarInput?.addEventListener('change', updateSettingsAvatar);
+
+settingsForm?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const refreshInterval = parseInt(settingsRefreshInterval.value);
+  if (refreshInterval < 3 || refreshInterval > 30) {
+    alert('刷新间隔必须在3-30秒之间');
+    return;
+  }
+  
+  saveSettings(refreshInterval);
+  closeSettingsModal();
+  appendMessage('设置已保存', 'bot');
 });

@@ -20,6 +20,7 @@
             <div id="authStatus" class="auth-status">未登录</div>
             <button id="openLoginBtn" class="btn small ghost">登录</button>
             <button id="logoutBtn" class="btn small ghost" style="display:none">退出登录</button>
+            <button id="openSettingsBtn" class="btn small ghost">⚙️ 设置</button>
           </div>
         </div>
       </div>
@@ -79,12 +80,15 @@
           <div class="modal-header">
             <div>
               <h3>创建群聊</h3>
-              <p>请输入群名称</p>
+              <p>请输入群名称和匹配码</p>
             </div>
           </div>
           <form id="createGroupForm" class="loginForm">
             <label>群名称
               <input id="groupNameInput" type="text" placeholder="输入群名称" />
+            </label>
+            <label>匹配码（可选，用于加入群聊）
+              <input id="groupMatchCodeInput" type="text" placeholder="留空则自动生成" maxlength="8" />
             </label>
             <div class="modal-actions">
               <button type="submit" class="btn primary">创建</button>
@@ -135,6 +139,36 @@
         <p id="authSwitch" class="small" style="text-align:center;margin-top:12px;color:var(--accent);cursor:pointer">
           还没有账号？点击注册
         </p>
+      </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal-overlay" aria-hidden="true">
+      <div class="modal">
+        <div class="modal-header">
+          <div>
+            <h3>聊天设置</h3>
+            <p>自定义你的聊天体验</p>
+          </div>
+        </div>
+        <form id="settingsForm" class="loginForm">
+          <div class="avatar-upload-container">
+            <div id="settingsAvatarPreview" class="avatar-preview" style="background-image: url('zaw.png');">
+              <input id="settingsAvatarInput" type="file" accept="image/*" class="avatar-input" />
+              <span class="avatar-upload-hint">点击更改头像</span>
+            </div>
+          </div>
+          <label>用户名
+            <input id="settingsUsername" type="text" readonly />
+          </label>
+          <label>消息刷新间隔（秒）
+            <input id="settingsRefreshInterval" type="number" min="3" max="30" value="3" />
+          </label>
+          <div class="modal-actions">
+            <button type="submit" class="btn primary">保存</button>
+            <button type="button" id="cancelSettingsBtn" class="btn ghost">取消</button>
+          </div>
+        </form>
       </div>
     </div>
   </main>
