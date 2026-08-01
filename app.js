@@ -32,15 +32,7 @@ const addMenuDropdown = document.getElementById('addMenuDropdown');
 const sendImageBtn = document.getElementById('sendImageBtn');
 const sendLocationBtn = document.getElementById('sendLocationBtn');
 const sendFileBtn = document.getElementById('sendFileBtn');
-const createGroupBtn = document.getElementById('createGroupBtn');
 const fileInput = document.getElementById('fileInput');
-
-const createGroupModal = document.getElementById('createGroupModal');
-const createGroupForm = document.getElementById('createGroupForm');
-const groupNameInput = document.getElementById('groupNameInput');
-const groupMatchCodeInput = document.getElementById('groupMatchCodeInput');
-const cancelGroupBtn = document.getElementById('cancelGroupBtn');
-const groupError = document.getElementById('groupError');
 
 // Settings Elements
 const openSettingsBtn = document.getElementById('openSettingsBtn');
@@ -49,7 +41,6 @@ const settingsForm = document.getElementById('settingsForm');
 const settingsAvatarPreview = document.getElementById('settingsAvatarPreview');
 const settingsAvatarInput = document.getElementById('settingsAvatarInput');
 const settingsUsername = document.getElementById('settingsUsername');
-const settingsRefreshInterval = document.getElementById('settingsRefreshInterval');
 const cancelSettingsBtn = document.getElementById('cancelSettingsBtn');
 
 // Voice Message Elements
@@ -753,7 +744,7 @@ authForm.addEventListener('submit', async (e)=>{
 
 let messageRefreshInterval = null;
 let lastFetchTime = 0;
-let MIN_FETCH_INTERVAL = 3000;
+const MIN_FETCH_INTERVAL = 5000;
 
 function startMessageRefresh() {
   if (messageRefreshInterval) {
@@ -767,7 +758,7 @@ function startMessageRefresh() {
         loadMessages();
       }
     }
-  }, 3000);
+  }, 5000);
 }
 
 function stopMessageRefresh() {
@@ -782,10 +773,7 @@ requestNotificationPermission();
 
 // Load settings
 function loadSettings() {
-  const savedInterval = localStorage.getItem('settings_refresh_interval');
-  if (savedInterval) {
-    MIN_FETCH_INTERVAL = parseInt(savedInterval) * 1000;
-  }
+  // 固定5秒刷新间隔
 }
 
 // show login modal when no token
@@ -1240,105 +1228,6 @@ btnLockRecording?.addEventListener('click', () => {
   toggleLockRecording();
 });
 
-// Create Group Functions
-function openCreateGroupModal() {
-  groupError.textContent = '';
-  groupNameInput.value = '';
-  groupMatchCodeInput.value = '';
-  createGroupModal.classList.add('show');
-  createGroupModal.setAttribute('aria-hidden', 'false');
-}
-
-function closeCreateGroupModal() {
-  createGroupModal.classList.remove('show');
-  createGroupModal.setAttribute('aria-hidden', 'true');
-}
-
-async function createGroup(groupName, matchCode) {
-  const token = getToken();
-  if (!token) {
-    alert('请先登录');
-    return;
-  }
-
-  try {
-    const headers = {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + token
-    };
-
-    const resp = await fetch(`${API_BASE}/api/groups`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        name: groupName,
-        matchCode: matchCode,
-        memberIds: []
-      })
-    });
-
-    if (resp.status === 401) {
-      setToken(null);
-      openLogin();
-      return;
-    }
-
-    const data = await resp.json();
-    
-    if (resp.ok && data.success) {
-      appendMessage(`群聊「${groupName}」创建成功！匹配码: ${matchCode}`, 'bot');
-      closeCreateGroupModal();
-      hideAddMenu();
-    } else {
-      groupError.textContent = data.message || '创建群聊失败';
-    }
-  } catch (error) {
-    console.error('创建群聊失败:', error);
-    groupError.textContent = '创建群聊失败: ' + error.message;
-  }
-}
-
-// Create Group Event Listeners
-createGroupBtn?.addEventListener('click', () => {
-  openCreateGroupModal();
-  hideAddMenu();
-});
-
-cancelGroupBtn?.addEventListener('click', closeCreateGroupModal);
-
-createGroupForm?.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  groupError.textContent = '';
-  
-  const groupName = groupNameInput.value.trim();
-  if (!groupName) {
-    groupError.textContent = '请输入群名称';
-    return;
-  }
-
-  let matchCode = groupMatchCodeInput.value.trim();
-  if (!matchCode) {
-    matchCode = generateMatchCode();
-  }
-  
-  await createGroup(groupName, matchCode);
-});
-
-function generateMatchCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let code = '';
-  for (let i = 0; i < 6; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return code;
-}
-
-createGroupModal?.addEventListener('click', (e) => {
-  if (e.target === createGroupModal) {
-    closeCreateGroupModal();
-  }
-});
-
 // Handle voice play button click
 document.addEventListener('click', (e) => {
   if (e.target.classList.contains('voice-play-btn')) {
@@ -1380,9 +1269,6 @@ function openSettingsModal() {
     settingsAvatarPreview.style.backgroundImage = `url('zaw.png')`;
   }
   
-  const refreshInterval = localStorage.getItem('settings_refresh_interval') || 3;
-  settingsRefreshInterval.value = refreshInterval;
-  
   settingsModal.classList.add('show');
   settingsModal.setAttribute('aria-hidden', 'false');
 }
@@ -1406,9 +1292,7 @@ function updateSettingsAvatar(event) {
   reader.readAsDataURL(file);
 }
 
-function saveSettings(refreshInterval) {
-  localStorage.setItem('settings_refresh_interval', refreshInterval);
-  MIN_FETCH_INTERVAL = refreshInterval * 1000;
+function saveSettings() {
   stopMessageRefresh();
   startMessageRefresh();
 }
@@ -1431,13 +1315,7 @@ settingsAvatarInput?.addEventListener('change', updateSettingsAvatar);
 settingsForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
   
-  const refreshInterval = parseInt(settingsRefreshInterval.value);
-  if (refreshInterval < 3 || refreshInterval > 30) {
-    alert('刷新间隔必须在3-30秒之间');
-    return;
-  }
-  
-  saveSettings(refreshInterval);
+  saveSettings();
   closeSettingsModal();
   appendMessage('设置已保存', 'bot');
 });
